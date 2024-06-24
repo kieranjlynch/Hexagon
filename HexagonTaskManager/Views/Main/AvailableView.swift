@@ -1,7 +1,10 @@
 import SwiftUI
+import SharedDataFramework
 
 struct AvailableView: View {
-    @FetchRequest(fetchRequest: ReminderService.getAvailableTasks())
+    private let reminderService = ReminderService() 
+
+    @FetchRequest(fetchRequest: ReminderService().getAvailableTasks())
     private var availableReminders: FetchedResults<Reminder>
     
     @State private var showingAddList = false
@@ -67,9 +70,9 @@ struct AvailableView: View {
                 AddReminderView()
             }
             .sheet(isPresented: $showingAddList) {
-                AddNewListView { name, color, arg  in
+                AddNewListView { name, color, symbol in
                     do {
-                        try ReminderService.saveTaskList(name, color, "list.bullet")
+                        try reminderService.saveTaskList(name, color, symbol)
                     } catch {
                         print("Failed to save new list: \(error)")
                     }

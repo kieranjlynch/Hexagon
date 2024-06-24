@@ -1,40 +1,40 @@
 import SwiftUI
+import SharedDataFramework
 
 struct FiltersView: View {
     @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \TaskList.name, ascending: true)])
     private var myListResults: FetchedResults<TaskList>
     
-    @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \Reminder.title, ascending: true)])
-    private var searchResults: FetchedResults<Reminder>
-    
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .today))
+    private let reminderService = ReminderService()
+
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .today))
     private var todayResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .scheduled))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .scheduled))
     private var scheduledResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .all))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .all))
     private var allResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .completed))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .completed))
     private var completedResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .withNotes))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .withNotes))
     private var withNotesResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .withURL))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .withURL))
     private var withURLResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .withPriority))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .withPriority))
     private var withPriorityResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .withTag))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .withTag))
     private var withTagResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .overdue))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .overdue))
     private var overdueResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .withLocation))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .withLocation))
     private var withLocationResults: FetchedResults<Reminder>
     
     @State private var search: String = ""
@@ -115,7 +115,7 @@ struct FiltersView: View {
         .sheet(isPresented: $showingAddList) {
             AddNewListView { name, color, symbol in
                 do {
-                    try ReminderService.saveTaskList(name, color, symbol)
+                    try reminderService.saveTaskList(name, color, symbol)
                 } catch {
                     print("Failed to save new list: \(error)")
                 }

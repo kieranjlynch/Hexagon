@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import SharedDataFramework
 
 struct ListsView: View {
     @FetchRequest(
@@ -8,7 +9,9 @@ struct ListsView: View {
     )
     var taskLists: FetchedResults<TaskList>
     
-    @FetchRequest(fetchRequest: ReminderService.getUnassignedReminders())
+    private var reminderService = ReminderService()
+    
+    @FetchRequest(fetchRequest: ReminderService().getUnassignedReminders())
     var unassignedReminders: FetchedResults<Reminder>
     
     @State private var taskListArray: [TaskList] = []
@@ -21,6 +24,10 @@ struct ListsView: View {
     @State private var showSettingsView = false
     @State private var selectedReminderForSchedule: Reminder?
     @Binding var selectedListID: NSManagedObjectID?
+    
+    public init(selectedListID: Binding<NSManagedObjectID?>) {
+            self._selectedListID = selectedListID
+        }
     
     var body: some View {
         NavigationStack {
@@ -159,7 +166,7 @@ struct ListsView: View {
         .sheet(isPresented: $showingAddList) {
             AddNewListView { name, color, symbol in
                 do {
-                    try ReminderService.saveTaskList(name, color, symbol)
+                    try reminderService.saveTaskList(name, color, symbol)
                     refreshTaskLists()
                 } catch {
                     print("Failed to save new list: \(error)")

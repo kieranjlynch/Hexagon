@@ -1,40 +1,41 @@
 import Foundation
 import CoreData
 
-class SearchViewModel: ObservableObject {
-    @Published var searchText: String = "" {
+public class SearchViewModel: ObservableObject {
+    @Published public var searchText: String = "" {
+        didSet {
+            performSearch()
+        }
+    }
+
+    @Published public var searchSuggestions: [String] = []
+    @Published public var searchScopes: [String] = ["All", "Today", "Scheduled"]
+    @Published public var selectedSearchScope: String = "All" {
         didSet {
             performSearch()
         }
     }
     
-    @Published var searchSuggestions: [String] = []
-    @Published var searchScopes: [String] = ["All", "Today", "Scheduled"]
-    @Published var selectedSearchScope: String = "All" {
-        didSet {
-            performSearch()
-        }
-    }
-    
-    @Published var searchTokens: [SearchToken] = []
+    @Published public var searchTokens: [SearchToken] = []
     
     private var viewContext: NSManagedObjectContext
+    private let reminderService = ReminderService()
     
-    init(context: NSManagedObjectContext) {
+    public init(context: NSManagedObjectContext) {
         self.viewContext = context
-        performSearch() 
+        performSearch()
     }
     
-    func fetchRequest() -> NSFetchRequest<Reminder> {
+    public func fetchRequest() -> NSFetchRequest<Reminder> {
         let request: NSFetchRequest<Reminder>
         
         switch selectedSearchScope {
         case "Today":
-            request = ReminderService.remindersByStatType(statType: .today)
+            request = reminderService.remindersByStatType(statType: .today)
         case "Scheduled":
-            request = ReminderService.remindersByStatType(statType: .scheduled)
+            request = reminderService.remindersByStatType(statType: .scheduled)
         default:
-            request = ReminderService.getRemindersBySearchTerm(searchText)
+            request = reminderService.getRemindersBySearchTerm(searchText)
         }
         
         if !searchTokens.isEmpty {
@@ -46,7 +47,7 @@ class SearchViewModel: ObservableObject {
         return request
     }
     
-    var searchResults: [Reminder] {
+    public var searchResults: [Reminder] {
         let request = fetchRequest()
         do {
             return try viewContext.fetch(request)
@@ -56,11 +57,11 @@ class SearchViewModel: ObservableObject {
         }
     }
     
-    func performSearch() {
+    public func performSearch() {
         objectWillChange.send()
     }
     
-    func updateReminder(_ reminder: Reminder) {
+    public func updateReminder(_ reminder: Reminder) {
         do {
             try viewContext.save()
         } catch {

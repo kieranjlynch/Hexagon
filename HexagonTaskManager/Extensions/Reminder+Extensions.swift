@@ -1,4 +1,5 @@
 import CoreData
+import SharedDataFramework
 
 extension Reminder {
     var tagsArray: [Tag] {

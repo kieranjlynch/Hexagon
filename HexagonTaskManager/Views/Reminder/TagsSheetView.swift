@@ -1,4 +1,5 @@
 import SwiftUI
+import SharedDataFramework
 
 struct TagsSheetView: View {
     var tags: FetchedResults<Tag>

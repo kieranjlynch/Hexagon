@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import SharedDataFramework
 
 struct SearchView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -38,11 +39,11 @@ struct SearchView: View {
                 .background(Color.darkGray.ignoresSafeArea())
                 .searchable(text: $searchText, prompt: "Search")
                 .focused($isSearchFocused)
-                .onChange(of: searchText) { _, newValue in
+                .onChange(of: searchText) { oldValue, newValue in
                     viewModel.searchText = newValue
                     viewModel.performSearch()
                 }
-                .onChange(of: viewModel.selectedSearchScope) {
+                .onChange(of: viewModel.selectedSearchScope) { oldValue, newValue in
                     viewModel.performSearch()
                 }
                 
@@ -77,7 +78,7 @@ struct SearchView: View {
             .sheet(isPresented: $showingAddList) {
                 AddNewListView { name, color, symbol in
                     do {
-                        try ReminderService.saveTaskList(name, color, symbol)
+                        try ReminderService().saveTaskList(name, color, symbol)
                     } catch {
                         print("Failed to save new list: \(error)")
                     }

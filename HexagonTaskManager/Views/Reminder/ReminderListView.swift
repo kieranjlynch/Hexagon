@@ -1,4 +1,5 @@
 import SwiftUI
+import SharedDataFramework
 
 struct ReminderListView: View {
     
@@ -7,13 +8,14 @@ struct ReminderListView: View {
     @State private var selectedReminder: Reminder?
     @State private var showReminderDetail: Bool = false
     @State private var showTaskScheduleView = false
+    private let reminderService = ReminderService()
     
     private func reminderCheckedChanged(reminder: Reminder, isCompleted: Bool) {
-        var editConfig = ReminderEditConfig(reminder: reminder)
+        var editConfig = ReminderEditConfig()
         editConfig.isCompleted = isCompleted
         
         do {
-            let _ = try ReminderService.updateReminder(reminder: reminder, editConfig: editConfig)
+            let _ = try reminderService.updateReminder(reminder: reminder, editConfig: editConfig)
         } catch {
             print(error)
         }
@@ -25,7 +27,7 @@ struct ReminderListView: View {
     
     private func deleteReminder(_ reminder: Reminder) {
         do {
-            try ReminderService.deleteReminder(reminder)
+            try reminderService.deleteReminder(reminder)
         } catch {
             print(error)
         }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SharedDataFramework
 
 struct ListIconView: View {
     let taskList: TaskList

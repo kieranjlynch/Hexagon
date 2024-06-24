@@ -2,10 +2,10 @@ import Foundation
 import UIKit
 import MapKit
 
-struct ReminderEditConfig {
+public struct ReminderEditConfig {
     var title: String = ""
     var notes: String?
-    var isCompleted: Bool = false
+    public var isCompleted: Bool = false
     var hasDate: Bool = false
     var hasTime: Bool = false
     var reminderDate: Date?
@@ -17,7 +17,7 @@ struct ReminderEditConfig {
     var url: String?
     var photos: [UIImage] = []
     
-    init() { }
+    public init() { }
     
     init(reminder: Reminder) {
         title = reminder.title ?? ""

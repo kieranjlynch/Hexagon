@@ -1,4 +1,5 @@
 import SwiftUI
+import SharedDataFramework
 
 enum ReminderCellEvents {
     case onInfo

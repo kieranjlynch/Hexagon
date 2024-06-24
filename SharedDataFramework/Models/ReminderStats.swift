@@ -2,17 +2,24 @@ import Foundation
 import CoreData
 import SwiftUI
 
-struct ReminderStatsValues {
-    var todayCount: Int = 0
-    var scheduledCount: Int = 0
-    var allCount: Int = 0
-    var completedCount: Int = 0
+public struct ReminderStatsValues {
+    public var todayCount: Int = 0
+    public var scheduledCount: Int = 0
+    public var allCount: Int = 0
+    public var completedCount: Int = 0
+    
+    public init(todayCount: Int = 0, scheduledCount: Int = 0, allCount: Int = 0, completedCount: Int = 0) {
+        self.todayCount = todayCount
+        self.scheduledCount = scheduledCount
+        self.allCount = allCount
+        self.completedCount = completedCount
+    }
 }
 
-struct ReminderStats {
+public struct ReminderStats {
+    public init() {}
     
-    func build(myListResults: FetchedResults<TaskList>) -> ReminderStatsValues {
-        
+    public func build(myListResults: FetchedResults<TaskList>) -> ReminderStatsValues {
         let remindersArray = myListResults.map { $0.reminders?.allObjects.compactMap { ($0 as! Reminder) } ?? [] }.reduce([], +)
         
         let todaysCount = calculateTodaysCount(reminders: remindersArray)
@@ -46,5 +53,13 @@ struct ReminderStats {
         return reminders.reduce(0) { result, reminder in
             return !reminder.isCompleted ? result + 1 : result
         }
+    }
+}
+
+
+extension Date {
+    var isToday: Bool {
+        let calendar = Calendar.current
+        return calendar.isDateInToday(self)
     }
 }

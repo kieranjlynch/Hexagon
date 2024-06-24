@@ -1,20 +1,21 @@
 import SwiftUI
+import SharedDataFramework
 import CoreData
 
 struct HomeView: View {
-    @FetchRequest(fetchRequest: ReminderService.getUnassignedAndIncompleteReminders())
+    @FetchRequest(fetchRequest: ReminderService().getUnassignedAndIncompleteReminders())
     private var unassignedReminders: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .today))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .today))
     private var todayResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .scheduled))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .scheduled))
     private var scheduledResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .all))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .all))
     private var allResults: FetchedResults<Reminder>
     
-    @FetchRequest(fetchRequest: ReminderService.remindersByStatType(statType: .completed))
+    @FetchRequest(fetchRequest: ReminderService().remindersByStatType(statType: .completed))
     private var completedResults: FetchedResults<Reminder>
     
     @FetchRequest(sortDescriptors: [])

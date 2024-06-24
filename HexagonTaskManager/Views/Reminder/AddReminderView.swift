@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import SharedDataFramework
 
 struct AddReminderView: View {
     @Environment(\.presentationMode) var presentationMode

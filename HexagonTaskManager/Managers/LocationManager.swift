@@ -1,17 +1,26 @@
 import Foundation
 import CoreLocation
+import MapKit
 
-@Observable
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    var location: CLLocation? = nil
-    
     private let locationManager = CLLocationManager()
+    @Published var currentLocation: CLLocationCoordinate2D? = nil
     
-    func startCurrentLocationUpdates() async throws {
-        for try await locationUpdate in CLLocationUpdate.liveUpdates() {
-            guard let location = locationUpdate.location else { return }
-            
-            self.location = location
+    override init() {
+        super.init()
+        locationManager.delegate = self
+    }
+    
+    func startUpdatingLocation() {
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        DispatchQueue.main.async {
+            self.currentLocation = location.coordinate
         }
+        locationManager.stopUpdatingLocation()
     }
 }

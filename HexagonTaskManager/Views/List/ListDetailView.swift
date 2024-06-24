@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import SharedDataFramework
 
 struct ListDetailView: View {
     @ObservedObject var taskList: TaskList

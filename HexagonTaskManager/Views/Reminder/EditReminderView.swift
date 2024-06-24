@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import SharedDataFramework
 
 struct EditReminderView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -22,6 +23,8 @@ struct EditReminderView: View {
     @State private var selectedPhotos: [UIImage] = []
     @State private var isShowingImagePicker = false
     @State private var showNewListView = false
+    
+    private let reminderService = ReminderService()
     
     var isFormValid: Bool {
         !title.isEmpty
@@ -120,7 +123,7 @@ struct EditReminderView: View {
                                 .sheet(isPresented: $showNewListView) {
                                     AddNewListView { name, color, symbol in
                                         do {
-                                            try ReminderService.saveTaskList(name, color, symbol)
+                                            try reminderService.saveTaskList(name, color, symbol)
                                         } catch {
                                             print("Failed to save new list: \(error)")
                                         }

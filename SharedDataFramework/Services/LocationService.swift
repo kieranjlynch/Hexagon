@@ -8,19 +8,6 @@ struct SearchCompletions: Identifiable {
     var url: URL?
 }
 
-struct SearchResult: Identifiable, Hashable {
-    let id = UUID()
-    let location: CLLocationCoordinate2D
-    
-    static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
-        lhs.id == rhs.id
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-}
-
 @Observable
 class LocationService: NSObject, MKLocalSearchCompleterDelegate, CLLocationManagerDelegate {
     static let shared = LocationService(completer: .init())
@@ -92,8 +79,9 @@ class LocationService: NSObject, MKLocalSearchCompleterDelegate, CLLocationManag
         guard let circularRegion = region as? CLCircularRegion else { return }
         guard let reminderId = UUID(uuidString: circularRegion.identifier) else { return }
 
+        let reminderService = ReminderService()
         do {
-            if let reminder = try ReminderService.getReminderById(id: reminderId) {
+            if let reminder = try reminderService.getReminderById(id: reminderId) {
                 sendNotification(for: reminder)
             }
         } catch {
