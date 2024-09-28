@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>hexagon</string>
+            </array>
+        </dict>
+    </array>
+    <key>CoreSpotlightContinuation</key>
+    <true/>
+    <key>INIntentsSupported</key>
+    <array>
+        <string>AddNewTaskIntent</string>
+        <string>ToggleTaskCompletionIntent</string>
+        <string>MarkTaskCompleteIntent</string>
+        <string>AddNewListIntent</string>
+        <string>MoveTaskIntent</string>
+        <string>GetTasksFromListIntent</string>
+        <string>ConfigurationAppIntent</string>
+    </array>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Hexagon needs access to your calendar so that you can schedule time for tasks</string>
+    <key>UIApplicationShortcutItems</key>
+    <array>
+        <dict>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>plus.circle</string>
+            <key>UIApplicationShortcutItemSubtitle</key>
+            <string>Create a new task</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Add Task</string>
+            <key>UIApplicationShortcutItemType</key>
+            <string>AddTaskAction</string>
+            <key>UIApplicationShortcutItemUserInfo</key>
+            <dict>
+                <key>url</key>
+                <string>hexagon://addTask</string>
+            </dict>
+        </dict>
+        <dict>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>tray</string>
+            <key>UIApplicationShortcutItemSubtitle</key>
+            <string>View unassigned tasks</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Open Inbox</string>
+            <key>UIApplicationShortcutItemType</key>
+            <string>OpenInboxAction</string>
+        </dict>
+    </array>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeDescription</key>
+            <string>Hexagon Reminder</string>
+            <key>UTTypeIdentifier</key>
+            <string>com.hexagon.reminder</string>
+        </dict>
+        <dict>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeDescription</key>
+            <string>Hexagon SubHeading</string>
+            <key>UTTypeIdentifier</key>
+            <string>com.hexagon.subheading</string>
+        </dict>
+    </array>
+</dict>
+</plist>
