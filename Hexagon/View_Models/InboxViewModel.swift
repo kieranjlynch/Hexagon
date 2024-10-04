@@ -12,21 +12,23 @@ import Combine
 @MainActor
 class InboxViewModel: ObservableObject {
     @Published var unassignedReminders: [Reminder] = []
-    @Published var error: IdentifiableError?
-    private var reminderService: ReminderService?
+    @Published private(set) var error: IdentifiableError?
+    private let reminderService: ReminderService
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
+    init(reminderService: ReminderService) {
+        self.reminderService = reminderService
         NotificationCenter.default.addObserver(self, selector: #selector(handleReminderAdded), name: .reminderAdded, object: nil)
+        
+        setupObservers()
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: .reminderAdded, object: nil)
     }
-
-    func setReminderService(_ service: ReminderService) {
-        self.reminderService = service
-        service.$reminders
+    
+    private func setupObservers() {
+        reminderService.$reminders
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 Task {
@@ -38,42 +40,30 @@ class InboxViewModel: ObservableObject {
 
     func loadUnassignedReminders() async {
         do {
-            guard let reminderService = reminderService else {
-                self.error = IdentifiableError(error: NSError(domain: "InboxViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "ReminderService not set"]))
-                return
-            }
             let fetchedReminders = try await reminderService.fetchUnassignedAndIncompleteReminders()
             self.unassignedReminders = fetchedReminders
             print("InboxViewModel updated with \(fetchedReminders.count) reminders")
         } catch {
-            self.error = IdentifiableError(error: error)
+            setError(error)
             print("Error loading unassigned reminders: \(error)")
         }
     }
 
     func toggleCompletion(for reminder: Reminder) async {
         do {
-            guard let reminderService = reminderService else {
-                self.error = IdentifiableError(error: NSError(domain: "InboxViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "ReminderService not set"]))
-                return
-            }
             try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
             await loadUnassignedReminders()
         } catch {
-            self.error = IdentifiableError(error: error)
+            setError(error)
         }
     }
 
     func deleteReminder(_ reminder: Reminder) async {
         do {
-            guard let reminderService = reminderService else {
-                self.error = IdentifiableError(error: NSError(domain: "InboxViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "ReminderService not set"]))
-                return
-            }
             try await reminderService.deleteReminder(reminder)
             await loadUnassignedReminders()
         } catch {
-            self.error = IdentifiableError(error: error)
+            setError(error)
         }
     }
 
@@ -81,5 +71,13 @@ class InboxViewModel: ObservableObject {
         Task {
             await loadUnassignedReminders()
         }
+    }
+
+    func setError(_ error: Error) {
+        self.error = IdentifiableError(error: error)
+    }
+
+    func clearError() {
+        self.error = nil
     }
 }

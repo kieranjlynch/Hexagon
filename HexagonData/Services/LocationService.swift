@@ -10,6 +10,7 @@ import CoreLocation
 import MapKit
 import UserNotifications
 import Combine
+import CoreData
 
 @MainActor
 public class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate, MKLocalSearchCompleterDelegate {
@@ -21,7 +22,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
     @Published public var authorizationStatus: CLAuthorizationStatus = .notDetermined
     
     private let completer = MKLocalSearchCompleter()
-
+    
     override public init() {
         super.init()
         locationManager.delegate = self
@@ -35,7 +36,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
         public let subTitle: String
         public var url: URL?
     }
-
+    
     public func startUpdatingLocation() {
         locationManager.startUpdatingLocation()
     }
@@ -43,7 +44,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
     public func requestWhenInUseAuthorization() {
         locationManager.requestWhenInUseAuthorization()
     }
-
+    
     nonisolated public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let location = locations.last {
             Task { @MainActor in
@@ -52,7 +53,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
             }
         }
     }
-
+    
     nonisolated public func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
         guard let circularRegion = region as? CLCircularRegion else { return }
         guard let reminderId = UUID(uuidString: circularRegion.identifier) else { return }
@@ -61,7 +62,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
             self.sendNotification(for: reminderId)
         }
     }
-
+    
     private func sendNotification(for reminderId: UUID) {
         let content = UNMutableNotificationContent()
         content.title = "Reminder"
@@ -74,12 +75,12 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
             }
         }
     }
-
+    
     public func update(queryFragment: String) {
         completer.resultTypes = .pointOfInterest
         completer.queryFragment = queryFragment
     }
-
+    
     nonisolated public func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
         Task { @MainActor in
             searchCompletions = completer.results.map { completion in
@@ -92,7 +93,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
             }
         }
     }
-
+    
     public func search(with query: String, coordinate: CLLocationCoordinate2D? = nil) async throws -> [SearchResult] {
         let mapKitRequest = MKLocalSearch.Request()
         mapKitRequest.naturalLanguageQuery = query
@@ -109,7 +110,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
             return SearchResult(location: location)
         }
     }
-
+    
     public func configureLocation(for reminder: Reminder, location: CLLocationCoordinate2D, radius: Double) async throws {
         let context = reminder.managedObjectContext!
         try await context.perform {
@@ -140,20 +141,40 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
         }
         locationManager.startMonitoring(for: region)
     }
+    
+    public func fetchLocations() async throws -> [Location] {
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        let request: NSFetchRequest<Location> = Location.fetchRequest()
+        return try await context.perform {
+            try context.fetch(request)
+        }
+    }
+
+    public func saveLocation(name: String, latitude: Double, longitude: Double) async throws -> Location {
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        return try await context.perform {
+            let newLocation = Location(context: context)
+            newLocation.name = name
+            newLocation.latitude = latitude
+            newLocation.longitude = longitude
+            try context.save()
+            return newLocation
+        }
+    }
 }
 
 public struct SearchResult: Identifiable, Hashable {
     public let id = UUID()
     public let location: CLLocationCoordinate2D
-
+    
     public init(location: CLLocationCoordinate2D) {
         self.location = location
     }
-
+    
     public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
         lhs.id == rhs.id
     }
-
+    
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

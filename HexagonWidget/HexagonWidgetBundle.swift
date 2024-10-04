@@ -2,12 +2,11 @@
 //  HexagonWidgetBundle.swift
 //  HexagonWidget
 //
-//  Created by Kieran Lynch on 27/09/2024.
+//  Created by Kieran Lynch on 04/10/2024.
 //
 
 import WidgetKit
 import SwiftUI
-import HexagonData
 
 @main
 struct HexagonWidgetBundle: WidgetBundle {

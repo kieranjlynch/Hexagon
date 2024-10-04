@@ -23,6 +23,8 @@ public struct SearchView: View {
     @Environment(\.managedObjectContext) private var viewContext
 
     @StateObject private var viewModel = SearchViewModel()
+    @State private var localSearchText: String = ""
+    @State private var localShowingAdvancedSearchView = false
 
     public var body: some View {
         NavigationStack {
@@ -38,7 +40,11 @@ public struct SearchView: View {
                 List(viewModel.searchResults, id: \.objectID) { reminder in
                     TaskCardView(
                         reminder: reminder,
-                        onTap: { viewModel.selectedReminder = reminder },
+                        onTap: {
+                            Task { @MainActor in
+                                viewModel.selectedReminder = reminder
+                            }
+                        },
                         onToggleCompletion: {
                             Task {
                                 viewModel.toggleCompletion(for: reminder)
@@ -54,19 +60,28 @@ public struct SearchView: View {
             .navigationTitle("Search")
             .foregroundColor(colorScheme == .dark ? .white : .black)
             .background(colorScheme == .dark ? Color.black : Color.white)
-            .sheet(item: $viewModel.selectedReminder) { reminder in
+            .sheet(item: Binding(
+                get: { viewModel.selectedReminder },
+                set: { newValue in
+                    Task { @MainActor in
+                        viewModel.selectedReminder = newValue
+                    }
+                }
+            )) { reminder in
                 AddReminderView(reminder: reminder)
                     .environmentObject(reminderService)
                     .environmentObject(locationService)
             }
             .onAppear {
                 viewModel.setup(reminderService: reminderService, viewContext: viewContext)
+                localSearchText = viewModel.searchText
+                localShowingAdvancedSearchView = viewModel.showingAdvancedSearchView
             }
         }
     }
 
     private var searchField: some View {
-        TextField("Search", text: $viewModel.searchText)
+        TextField("Search", text: $localSearchText)
             .padding(10)
             .background(Color(colorScheme == .dark ? .black : .white))
             .overlay(
@@ -77,8 +92,9 @@ public struct SearchView: View {
             .cornerRadius(8)
             .padding(.horizontal)
             .padding(.top, 6)
-            .onChange(of: viewModel.searchText) { _, _ in
-                Task {
+            .onChange(of: localSearchText) { _, newValue in
+                Task { @MainActor in
+                    viewModel.searchText = newValue
                     await viewModel.performSearch()
                 }
             }
@@ -118,12 +134,24 @@ public struct SearchView: View {
     private var advancedSearchButton: some View {
         CustomButton(
             title: "Advanced Search",
-            action: { viewModel.showingAdvancedSearchView.toggle() },
+            action: {
+                localShowingAdvancedSearchView.toggle()
+                Task { @MainActor in
+                    viewModel.showingAdvancedSearchView = localShowingAdvancedSearchView
+                }
+            },
             style: .secondary
         )
-        .sheet(isPresented: $viewModel.showingAdvancedSearchView) {
+        .sheet(isPresented: $localShowingAdvancedSearchView) {
             AdvancedSearchView(
-                filterItems: $viewModel.filterItems,
+                filterItems: Binding(
+                    get: { viewModel.filterItems },
+                    set: { newValue in
+                        Task { @MainActor in
+                            viewModel.filterItems = newValue
+                        }
+                    }
+                ),
                 onSave: { name in
                     viewModel.saveCurrentFilter(name: name)
                 }
@@ -140,6 +168,7 @@ public struct SearchView: View {
             Button(action: {
                 Task {
                     await viewModel.clearSearch()
+                    localSearchText = ""
                 }
             }) {
                 Image(systemName: "xmark.circle.fill")

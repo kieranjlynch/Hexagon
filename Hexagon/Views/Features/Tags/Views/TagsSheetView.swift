@@ -22,6 +22,13 @@ struct TagsSheetView: View {
     @State private var errorMessage: String?
     private let logger = Logger(subsystem: Constants.General.appBundleIdentifier, category: "TagsSheetView")
     
+    private let tagService: TagService
+    
+    init(selectedTags: Binding<Set<Tag>>) {
+        self._selectedTags = selectedTags
+        self.tagService = TagService()
+    }
+    
     var body: some View {
         List {
             ForEach(tags) { tag in
@@ -61,7 +68,7 @@ struct TagsSheetView: View {
     private func addNewTag() async {
         guard !newTagName.isEmpty else { return }
         do {
-            let newTag = try await reminderService.createTag(name: newTagName)
+            let newTag = try await tagService.createTag(name: newTagName)
             selectedTags.insert(newTag)
             newTagName = ""
             await fetchTags()
@@ -73,7 +80,7 @@ struct TagsSheetView: View {
     
     private func fetchTags() async {
         do {
-            tags = try await reminderService.fetchTags()
+            tags = try await tagService.fetchTags()
         } catch {
             logger.error("Failed to fetch tags: \(error)")
             errorMessage = "Unable to load tags. Please try again."

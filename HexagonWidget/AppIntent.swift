@@ -2,79 +2,72 @@
 //  AppIntent.swift
 //  HexagonWidget
 //
-//  Created by Kieran Lynch on 27/09/2024.
+//  Created by Kieran Lynch on 04/10/2024.
 //
 
 import WidgetKit
 import AppIntents
-import CoreData
+import SwiftUI
 import HexagonData
 
 struct ConfigurationAppIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Configuration"
-    static var description = IntentDescription("Choose a list to display tasks from.")
+    static var title: LocalizedStringResource = "Task List Configuration"
+    static var description: IntentDescription = IntentDescription("Choose a task list to display")
 
-    @Parameter(title: "Select List", optionsProvider: WidgetListQuery())
-    var selectedList: ListEntity?
+    @Parameter(title: "Task List")
+    var taskList: TaskListEntity?
 
-    init() {}
-
-    init(selectedList: ListEntity?) {
-        self.selectedList = selectedList
-    }
-
-    func perform() async throws -> some IntentResult {
-        return .result()
+    static var parameterSummary: some ParameterSummary {
+        Summary("Show tasks from \(\.$taskList)")
     }
 }
 
-public struct ListEntity: AppEntity, Identifiable, Hashable {
-    public let id: UUID
-    public let name: String
-
-    public static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "List")
-
-    public var displayRepresentation: DisplayRepresentation {
+struct TaskListEntity: AppEntity, Identifiable, TypeDisplayRepresentable, Equatable {
+    let id: UUID
+    let name: String
+    
+    static var defaultQuery = TaskListQuery()
+    
+    var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
-    public static var defaultQuery = WidgetListQuery()
-
-    public init(id: UUID, name: String) {
-        self.id = id
-        self.name = name
+    static var typeDisplayRepresentation: TypeDisplayRepresentation {
+        TypeDisplayRepresentation(name: "Task List")
     }
 }
 
-public struct WidgetListQuery: EntityQuery {
-    public init() {
-        print("WidgetListQuery initialized")
-    }
+struct TaskListQuery: EntityQuery {
+    typealias Entity = TaskListEntity
     
-    public func entities(for identifiers: [UUID]) async throws -> [ListEntity] {
-        print("entities(for:) called with identifiers: \(identifiers)")
-        let context = PersistenceController.shared.persistentContainer.viewContext
-        let fetchRequest: NSFetchRequest<TaskList> = TaskList.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "listID IN %@", identifiers)
-        
-        let taskLists = try context.fetch(fetchRequest)
-        let entities = taskLists.compactMap { ListEntity(id: $0.listID!, name: $0.name ?? "Unnamed") }
-        print("Returning \(entities.count) entities")
-        return entities
+    func entities(for identifiers: [UUID]) async throws -> [TaskListEntity] {
+        let taskLists = try await fetchTaskLists()
+        return taskLists.filter { identifiers.contains($0.id) }
     }
-    
-    public func suggestedEntities() async throws -> [ListEntity] {
-        print("suggestedEntities() called")
-        let context = PersistenceController.shared.newBackgroundContext()
-        return try await context.perform {
-            let fetchRequest: NSFetchRequest<TaskList> = TaskList.fetchRequest()
-            let taskLists = try context.fetch(fetchRequest)
-            let entities = taskLists.compactMap { taskList -> ListEntity? in
-                guard let listID = taskList.listID else { return nil }
-                return ListEntity(id: listID, name: taskList.name ?? "Unnamed")
+
+    func suggestedEntities() async throws -> [TaskListEntity] {
+        return try await fetchTaskLists()
+    }
+
+    func results() async throws -> [TaskListEntity] {
+        return try await fetchTaskLists()
+    }
+
+    func defaultResult() async -> TaskListEntity? {
+        return try? await fetchTaskLists().first
+    }
+
+    private func fetchTaskLists() async throws -> [TaskListEntity] {
+        do {
+            let taskLists = try await ListService.shared.updateTaskLists()
+            let entities = taskLists.compactMap { taskList -> TaskListEntity? in
+                guard let id = taskList.listID, let name = taskList.name else { return nil }
+                return TaskListEntity(id: id, name: name)
             }
-            print("Suggesting \(entities.count) entities")
             return entities
+        } catch {
+            print("Error fetching task lists: \(error)")
+            return []
         }
     }
 }

@@ -16,7 +16,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "DA5B3F402CA6E64F00ECF757"
+               BlueprintIdentifier = "DAA89D462CB0269D00C8B913"
                BuildableName = "HexagonWidgetExtension.appex"
                BlueprintName = "HexagonWidgetExtension"
                ReferencedContainer = "container:Hexagon.xcodeproj">
@@ -75,7 +75,7 @@
          BundleIdentifier = "com.apple.springboard">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "DA5B3F402CA6E64F00ECF757"
+            BlueprintIdentifier = "DAA89D462CB0269D00C8B913"
             BuildableName = "HexagonWidgetExtension.appex"
             BlueprintName = "HexagonWidgetExtension"
             ReferencedContainer = "container:Hexagon.xcodeproj">

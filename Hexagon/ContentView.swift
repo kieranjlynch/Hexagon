@@ -37,7 +37,7 @@ struct ContentView: View {
                 splitViewLayout
             }
         }
-        .onChange(of: selectedTab) { oldValue, newValue in
+        .onChange(of: selectedTab, initial: false) { oldValue, newValue in
             if oldValue != newValue {
                 handleTabChange(from: oldValue, to: newValue)
             }
@@ -172,7 +172,7 @@ struct ContentView: View {
     }
     
     private var inboxView: some View {
-        InboxView()
+        InboxView(reminderService: reminderService)
             .environmentObject(reminderService)
             .environmentObject(locationService)
     }
@@ -192,7 +192,7 @@ struct ContentView: View {
     }
     
     private var timelineView: some View {
-        TimelineView()
+        TimelineView(reminderService: reminderService, listService: ListService.shared)
             .environmentObject(reminderService)
             .environmentObject(locationService)
             .environmentObject(appSettings)

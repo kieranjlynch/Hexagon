@@ -35,6 +35,7 @@ public class AddReminderViewModel: ObservableObject {
     public var reminder: Reminder?
     public var reminderService: ReminderService!
     public var locationService: LocationService!
+    public var tagService: TagService!
     
     private var logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "AddReminderViewModel")
     
@@ -61,7 +62,7 @@ public class AddReminderViewModel: ObservableObject {
     }
     
     public var isFormValid: Bool {
-        !title.isEmpty && selectedList != nil
+        !title.isEmpty
     }
     
     public func updatePhotos(_ newPhotos: [UIImage]) {
@@ -127,10 +128,10 @@ public class AddReminderViewModel: ObservableObject {
     
     public func addNewTag() async throws {
         guard !newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard let reminderService = reminderService else {
+        guard reminderService != nil else {
             throw ReminderError.missingServices
         }
-        let newTag = try await reminderService.createTag(name: newTagName)
+        let newTag = try await tagService.createTag(name: newTagName)
         selectedTags.insert(newTag)
         newTagName = ""
     }

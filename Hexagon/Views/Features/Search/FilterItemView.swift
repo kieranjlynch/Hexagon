@@ -16,7 +16,8 @@ struct FilterItemView: View {
     let onGroup: () -> Void
     @State private var tags: [Tag] = []
     @EnvironmentObject private var reminderService: ReminderService
-    
+    @EnvironmentObject private var tagService: TagService
+
     var body: some View {
         HStack(spacing: 8) {
             if item.openParen {
@@ -111,7 +112,7 @@ struct FilterItemView: View {
     
     private func fetchTags() async {
         do {
-            tags = try await reminderService.fetchTags()
+            tags = try await tagService.fetchTags()
         } catch {
             print("Failed to fetch tags: \(error)")
         }

@@ -2,302 +2,274 @@
 //  HexagonWidget.swift
 //  HexagonWidget
 //
-//  Created by Kieran Lynch on 27/09/2024.
+//  Created by Kieran Lynch on 04/10/2024.
 //
 
 import WidgetKit
 import SwiftUI
-import os
 import HexagonData
-import CoreData
+
+struct Provider: AppIntentTimelineProvider {
+    typealias Intent = ConfigurationAppIntent
+    typealias Entry = SimpleEntry
+    
+    func placeholder(in context: Context) -> SimpleEntry {
+        SimpleEntry(date: Date(), taskList: nil, reminderCount: 0, configuration: ConfigurationAppIntent(), reminders: [])
+    }
+    
+    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
+        await getEntry(for: configuration)
+    }
+    
+    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
+        let entry = await getEntry(for: configuration)
+        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(15 * 60)))
+    }
+    
+    private func getEntry(for configuration: ConfigurationAppIntent) async -> SimpleEntry {
+        guard let taskListEntity = configuration.taskList else {
+            return SimpleEntry(date: Date(), taskList: nil, reminderCount: 0, configuration: configuration, reminders: [])
+        }
+        
+        let taskListID = taskListEntity.id
+        
+        do {
+            let taskLists = try await ListService.shared.updateTaskLists()
+            guard let taskList = taskLists.first(where: { $0.listID == taskListID }) else {
+                return SimpleEntry(date: Date(), taskList: nil, reminderCount: 0, configuration: configuration, reminders: [])
+            }
+            
+            let reminders = try await ReminderService.shared.getRemindersForList(taskList)
+            let incompleteReminders = reminders.filter { !$0.isCompleted }
+            
+            return SimpleEntry(
+                date: Date(),
+                taskList: taskList,
+                reminderCount: incompleteReminders.count,
+                configuration: configuration,
+                reminders: reminders
+            )
+        } catch {
+            print("Error fetching data for widget: \(error)")
+            return SimpleEntry(date: Date(), taskList: nil, reminderCount: 0, configuration: configuration, reminders: [])
+        }
+    }
+}
+
+struct SimpleEntry: TimelineEntry {
+    let date: Date
+    let taskList: TaskList?
+    let reminderCount: Int
+    let configuration: ConfigurationAppIntent
+    let reminders: [Reminder]
+}
+
+struct HexagonWidgetEntryView : View {
+    @Environment(\.widgetFamily) var widgetFamily
+    var entry: Provider.Entry
+    
+    var body: some View {
+        switch widgetFamily {
+        case .systemSmall:
+            smallWidget
+        case .systemMedium:
+            mediumWidget
+        case .systemLarge:
+            largeWidget
+        case .systemExtraLarge:
+            extraLargeWidget
+        case .accessoryCircular:
+            circularAccessoryWidget
+        case .accessoryRectangular:
+            rectangularAccessoryWidget
+        case .accessoryInline:
+            inlineAccessoryWidget
+        @unknown default:
+            smallWidget
+        }
+    }
+    
+    var smallWidget: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let taskList = entry.taskList {
+                Text(taskList.name ?? "Unnamed List")
+                    .font(.headline)
+                    .lineLimit(1)
+                Text("\(entry.reminderCount) tasks")
+                    .font(.subheadline)
+            } else {
+                Text("No list selected")
+                    .font(.headline)
+            }
+        }
+        .padding()
+    }
+    
+    var mediumWidget: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                if let taskList = entry.taskList {
+                    Text(taskList.name ?? "Unnamed List")
+                        .font(.headline)
+                    Text("\(entry.reminderCount) incomplete tasks")
+                        .font(.subheadline)
+                    Text("Last updated: \(entry.date, style: .time)")
+                        .font(.caption)
+                } else {
+                    Text("No list selected")
+                        .font(.headline)
+                }
+            }
+            Spacer()
+            CircularProgressView(progress: Double(entry.reminderCount) / Double(max(entry.reminders.count, 1)))
+        }
+        .padding()
+    }
+    
+    var largeWidget: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let taskList = entry.taskList {
+                Text(taskList.name ?? "Unnamed List")
+                    .font(.headline)
+                Text("\(entry.reminderCount) incomplete tasks")
+                    .font(.subheadline)
+                Divider()
+                ForEach(entry.reminders.prefix(5), id: \.reminderID) { reminder in
+                    HStack {
+                        Image(systemName: reminder.isCompleted ? "checkmark.circle.fill" : "circle")
+                        Text(reminder.title ?? "Untitled")
+                            .lineLimit(1)
+                    }
+                }
+                if entry.reminders.count > 5 {
+                    Text("+ \(entry.reminders.count - 5) more")
+                        .font(.caption)
+                }
+            } else {
+                Text("No list selected")
+                    .font(.headline)
+            }
+        }
+        .padding()
+    }
+    
+    var extraLargeWidget: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let taskList = entry.taskList {
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(taskList.name ?? "Unnamed List")
+                            .font(.title)
+                        Text("\(entry.reminderCount) incomplete tasks")
+                            .font(.headline)
+                    }
+                    Spacer()
+                    CircularProgressView(progress: Double(entry.reminderCount) / Double(max(entry.reminders.count, 1)))
+                }
+                Divider()
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    ForEach(entry.reminders.prefix(10), id: \.reminderID) { reminder in
+                        HStack {
+                            Image(systemName: reminder.isCompleted ? "checkmark.circle.fill" : "circle")
+                            Text(reminder.title ?? "Untitled")
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                if entry.reminders.count > 10 {
+                    Text("+ \(entry.reminders.count - 10) more")
+                        .font(.caption)
+                }
+            } else {
+                Text("No list selected")
+                    .font(.title)
+            }
+        }
+        .padding()
+    }
+    
+    var circularAccessoryWidget: some View {
+        VStack {
+            if let taskList = entry.taskList {
+                Text("\(entry.reminderCount)")
+                    .font(.system(size: 32, weight: .bold))
+                Text(taskList.name ?? "Tasks")
+                    .font(.system(size: 12))
+                    .lineLimit(1)
+            } else {
+                Text("No List")
+                    .font(.system(size: 12))
+            }
+        }
+    }
+    
+    var rectangularAccessoryWidget: some View {
+        HStack {
+            if let taskList = entry.taskList {
+                VStack(alignment: .leading) {
+                    Text(taskList.name ?? "Tasks")
+                        .font(.headline)
+                        .lineLimit(1)
+                    Text("\(entry.reminderCount) tasks")
+                        .font(.subheadline)
+                }
+            } else {
+                Text("No List Selected")
+                    .font(.headline)
+            }
+        }
+    }
+    
+    var inlineAccessoryWidget: some View {
+        if let taskList = entry.taskList {
+            Text("\(taskList.name ?? "Tasks"): \(entry.reminderCount)")
+        } else {
+            Text("No List")
+        }
+    }
+}
+
+struct CircularProgressView: View {
+    var progress: Double
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(lineWidth: 8.0)
+                .opacity(0.3)
+                .foregroundColor(Color.blue)
+            
+            Circle()
+                .trim(from: 0.0, to: CGFloat(min(self.progress, 1.0)))
+                .stroke(style: StrokeStyle(lineWidth: 8.0, lineCap: .round, lineJoin: .round))
+                .foregroundColor(Color.blue)
+                .rotationEffect(Angle(degrees: 270.0))
+            
+            Text(String(format: "%.0f%%", min(self.progress, 1.0)*100.0))
+                .font(.caption)
+                .bold()
+        }
+    }
+}
 
 struct HexagonWidget: Widget {
     let kind: String = "HexagonWidget"
     
-    init() {
-        print("Widget: HexagonWidget initialized")
-    }
-
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             HexagonWidgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("Hexagon Tasks")
-        .description("Display your tasks from Hexagon.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular])
-    }
-}
-
-struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), tasks: [])
-    }
-
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration, tasks: loadTasks(for: configuration.selectedList))
-    }
-
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) -> Timeline<SimpleEntry> {
-        let entry = SimpleEntry(date: Date(), configuration: configuration, tasks: loadTasks(for: configuration.selectedList))
-        return Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(3600)))
-    }
-
-    private func loadTasks(for selectedList: ListEntity?) -> [ReminderTask] {
-        let userDefaults = UserDefaults(suiteName: "group.com.yourcompany.Hexagon")
-        let tasksData = userDefaults?.data(forKey: "WidgetTasks")
-        let tasks = (try? JSONDecoder().decode([ReminderTask].self, from: tasksData ?? Data())) ?? []
-        return tasks.filter { $0.listID == selectedList?.id }
-    }
-}
-
-struct ReminderTask: Identifiable, Codable {
-    let id: String
-    let title: String
-    let isCompleted: Bool
-    let listID: UUID
-}
-
-//struct Provider: AppIntentTimelineProvider {
-//    init() {
-//        print("Widget: Provider initialized")
-//    }
-//    func placeholder(in context: Context) -> SimpleEntry {
-//        print("Widget: placeholder called")
-//        return SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), tasks: [])
-//    }
-//
-//    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-//        print("Widget: snapshot called for list: \(configuration.selectedList?.name ?? "nil")")
-//        return await getEntry(for: configuration)
-//    }
-//
-//    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-//        print("Widget: timeline called for list: \(configuration.selectedList?.name ?? "nil")")
-//        let entry = await getEntry(for: configuration)
-//        let nextUpdateDate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
-//        return Timeline(entries: [entry], policy: .after(nextUpdateDate))
-//    }
-//
-//    private func getEntry(for configuration: ConfigurationAppIntent) async -> SimpleEntry {
-//        print("Widget: getEntry called for list: \(configuration.selectedList?.name ?? "nil")")
-//        do {
-//            try await PersistenceController.shared.initialize()
-//            print("Widget: PersistenceController initialized")
-//            let tasks = await fetchTasks(for: configuration.selectedList)
-//            print("Widget: Fetched \(tasks.count) tasks")
-//            return SimpleEntry(date: Date(), configuration: configuration, tasks: tasks)
-//        } catch {
-//            print("Widget: Error in getEntry: \(error.localizedDescription)")
-//            return SimpleEntry(date: Date(), configuration: configuration, tasks: [])
-//        }
-//    }
-//
-//    private func fetchTasks(for selectedList: ListEntity?) async -> [ReminderTask] {
-//        print("Widget: fetchTasks called for list: \(selectedList?.name ?? "nil")")
-//        let context = PersistenceController.shared.persistentContainer.viewContext
-//        let fetchRequest: NSFetchRequest<HexagonData.Reminder> = HexagonData.Reminder.fetchRequest()
-//        
-//        if let listID = selectedList?.id {
-//            fetchRequest.predicate = NSPredicate(format: "list.listID == %@ AND isCompleted == NO", listID as CVarArg)
-//            print("Widget: Fetching tasks for list ID: \(listID)")
-//        } else {
-//            fetchRequest.predicate = NSPredicate(format: "list == nil AND isCompleted == NO")
-//            print("Widget: Fetching unassigned tasks")
-//        }
-//        
-//        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \HexagonData.Reminder.startDate, ascending: true)]
-//        fetchRequest.fetchLimit = 5
-//        
-//        print("Widget: Fetch request: \(fetchRequest)")
-//        
-//        do {
-//            let reminders = try context.fetch(fetchRequest)
-//            print("Widget: Fetched \(reminders.count) reminders")
-//            return reminders.map { reminder in
-//                print("Widget: Task: \(reminder.title ?? "Untitled"), ID: \(reminder.reminderID?.uuidString ?? "Unknown"), List: \(reminder.list?.name ?? "No List")")
-//                return ReminderTask(id: reminder.reminderID?.uuidString ?? UUID().uuidString, title: reminder.title ?? "", isCompleted: reminder.isCompleted)
-//            }
-//        } catch {
-//            print("Widget: Error fetching tasks: \(error.localizedDescription)")
-//            return []
-//        }
-//    }
-//}
-
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let configuration: ConfigurationAppIntent
-    let tasks: [ReminderTask]
-
-    init(date: Date, configuration: ConfigurationAppIntent, tasks: [ReminderTask]) {
-        self.date = date
-        self.configuration = configuration
-        self.tasks = tasks
-        print("Widget: SimpleEntry created with \(tasks.count) tasks")
-    }
-}
-
-struct HexagonWidgetEntryView: View {
-    var entry: Provider.Entry
-    @Environment(\.widgetFamily) var family
-    @Environment(\.widgetRenderingMode) var renderingMode
-    
-    init(entry: Provider.Entry) {
-        self.entry = entry
-        print("Widget: HexagonWidgetEntryView initialized with \(entry.tasks.count) tasks")
-    }
-    
-    var body: some View {
-        switch family {
-        case .systemSmall:
-            smallWidgetView
-        case .systemMedium:
-            mediumWidgetView
-        case .systemLarge, .systemExtraLarge:
-            largeToExtraLargeWidgetView
-        case .accessoryRectangular:
-            accessoryRectangularWidgetView
-        case .accessoryCircular, .accessoryInline:
-            Text("Unsupported")
-        @unknown default:
-            Text("Unknown widget family")
-        }
-    }
-    
-    private var smallWidgetView: some View {
-        VStack {
-            Text(entry.configuration.selectedList?.name ?? "Inbox")
-                .font(.headline)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding([.top, .leading, .trailing], 8)
-            
-            Spacer()
-            
-            Text("\(entry.tasks.count)")
-                .font(.system(size: 60, weight: .bold, design: .default))
-                .foregroundColor(.primary)
-                .animation(.spring(), value: entry.tasks.count)
-            
-            Text("tasks")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .padding(.bottom, 8)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .multilineTextAlignment(.center)
-        .containerBackground(.fill.tertiary, for: .widget)
-    }
-    
-    private var mediumWidgetView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(entry.configuration.selectedList?.name ?? "Inbox")
-                .font(.headline)
-                .padding([.top, .leading, .trailing], 8)
-            
-            Divider()
-            
-            ForEach(entry.tasks) { task in
-                HStack {
-                    Button(intent: HexagonData.ToggleTaskCompletionIntent(taskID: task.id)) {
-                        Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(task.isCompleted ? .green : .gray)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .accessibilityLabel(task.isCompleted ? "Mark as incomplete" : "Mark as complete")
-                    
-                    Text(task.title)
-                        .strikethrough(task.isCompleted, color: .gray)
-                        .foregroundColor(task.isCompleted ? .gray : .primary)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                }
-                .padding(.vertical, 4)
-                .animation(.spring(), value: task.isCompleted)
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .containerBackground(.fill.tertiary, for: .widget)
-    }
-    
-    private var largeToExtraLargeWidgetView: some View {
-        ZStack {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(entry.configuration.selectedList?.name ?? "Inbox")
-                    .font(.headline)
-                    .padding([.top, .leading, .trailing], 8)
-                
-                Divider()
-                
-                ForEach(entry.tasks) { task in
-                    HStack {
-                        Button(intent: HexagonData.ToggleTaskCompletionIntent(taskID: task.id)) {
-                            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                                .foregroundColor(task.isCompleted ? .green : .gray)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel(task.isCompleted ? "Mark as incomplete" : "Mark as complete")
-                        
-                        Text(task.title)
-                            .strikethrough(task.isCompleted, color: .gray)
-                            .foregroundColor(task.isCompleted ? .gray : .primary)
-                            .lineLimit(1)
-                        
-                        Spacer()
-                    }
-                    .padding(.vertical, 4)
-                    .animation(.spring(), value: task.isCompleted)
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .containerBackground(.fill.tertiary, for: .widget)
-            
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Link(destination: URL(string: "hexagon://addTask")!) {
-                        Image(systemName: "plus.circle.fill")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .foregroundColor(.blue)
-                            .shadow(radius: 2)
-                    }
-                    .accessibilityLabel("Add Task")
-                    .accessibilityHint("Tap to add a new task")
-                    .padding([.trailing, .bottom], 8)
-                }
-            }
-        }
-    }
-    
-    private var accessoryRectangularWidgetView: some View {
-        VStack(alignment: .leading) {
-            Text(entry.configuration.selectedList?.name ?? "Inbox")
-                .font(.headline)
-                .padding([.top, .leading, .trailing], 8)
-            
-            Divider()
-            
-            ForEach(entry.tasks) { task in
-                HStack {
-                    Text(task.title)
-                        .strikethrough(task.isCompleted, color: .gray)
-                        .foregroundColor(task.isCompleted ? .gray : .primary)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                }
-                .padding(.vertical, 2)
-            }
-        }
-        .padding()
-        .containerBackground(.fill.tertiary, for: .widget)
+        .configurationDisplayName("Task List Widget")
+        .description("Display your tasks from a selected list.")
+        .supportedFamilies([
+            .systemSmall,
+            .systemMedium,
+            .systemLarge,
+            .systemExtraLarge,
+            .accessoryCircular,
+            .accessoryRectangular,
+            .accessoryInline
+        ])
     }
 }

@@ -11,11 +11,12 @@ import HexagonData
 struct ListFieldView: View {
     @Binding var selectedList: TaskList?
     var colorScheme: ColorScheme
+    @EnvironmentObject private var listService: ListService
     
     var body: some View {
         HStack {
             NavigationLink {
-                ListSheetView(selectedList: $selectedList)
+                ListSheetView(selectedList: $selectedList, listService: listService)
             } label: {
                 Label {
                     Text("List")
@@ -23,7 +24,7 @@ struct ListFieldView: View {
                     Image(systemName: "list.bullet")
                 }
                 .foregroundColor(colorScheme == .dark ? .white : .black)
-            }            
+            }
             Spacer()
             if let selectedList = selectedList {
                 Text(selectedList.name ?? "")

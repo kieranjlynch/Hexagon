@@ -8,7 +8,7 @@
 import SwiftUI
 import HexagonData
 
-struct ListSheetView: View {
+public struct ListSheetView: View {
     @Environment(\.appTintColor) var appTintColor
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedList: TaskList?
@@ -17,7 +17,14 @@ struct ListSheetView: View {
     @EnvironmentObject private var reminderService: ReminderService
     @State private var errorMessage: String?
     
-    var body: some View {
+    private let listService: ListService
+    
+    public init(selectedList: Binding<TaskList?>, listService: ListService) {
+        self._selectedList = selectedList
+        self.listService = listService
+    }
+    
+    public var body: some View {
         VStack(spacing: 0) {
             Text("Save to a List")
                 .font(.title2)
@@ -80,7 +87,7 @@ struct ListSheetView: View {
     
     private func fetchLists() async {
         do {
-            lists = try await reminderService.updateTaskLists()
+            lists = try await listService.updateTaskLists()
         } catch {
             errorMessage = "Failed to fetch lists: \(error.localizedDescription)"
         }

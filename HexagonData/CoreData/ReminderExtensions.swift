@@ -8,9 +8,8 @@
 import Foundation
 import UniformTypeIdentifiers
 import CoreData
-import HexagonData
 
-extension Reminder: @retroactive NSItemProviderWriting {
+extension Reminder: NSItemProviderWriting {
     public static var writableTypeIdentifiersForItemProvider: [String] {
         [UTType.hexagonReminder.identifier]
     }
@@ -24,17 +23,17 @@ extension Reminder: @retroactive NSItemProviderWriting {
 }
 
 extension Reminder {
-    var tagsArray: [Tag] {
+    public var tagsArray: [Tag] {
         let tagSet = tags as? Set<Tag> ?? []
         return Array(tagSet)
     }
     
-    var photosArray: [ReminderPhoto] {
+    public var photosArray: [ReminderPhoto] {
         let photoSet = photos as? Set<ReminderPhoto> ?? []
         return Array(photoSet)
     }
     
-    var notificationsArray: [String] {
+    public var notificationsArray: [String] {
         return notifications?.components(separatedBy: ",").filter { !$0.isEmpty } ?? []
     }
 }
