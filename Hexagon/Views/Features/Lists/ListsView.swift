@@ -14,6 +14,7 @@ struct ListsView: View {
     @Environment(\.managedObjectContext) var context
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
+    @EnvironmentObject private var listService: ListService
     @EnvironmentObject private var appSettings: AppSettings
     @Binding var selectedListID: NSManagedObjectID?
     @Binding var showFloatingActionButtonTip: Bool
@@ -25,33 +26,51 @@ struct ListsView: View {
     
     @State private var showAddReminderView = false
     @State private var showAddNewListView = false
+    @State private var showEditListView = false
+    @State private var showScheduleView = false
+    @State private var selectedTaskList: TaskList?
+
+    // Function to create ViewModel for each taskList
+    private func viewModelForTaskList(_ taskList: TaskList) -> ListDetailViewModel {
+        return ListDetailViewModel(
+            context: context,
+            taskList: taskList,
+            reminderService: reminderService,
+            locationService: locationService
+        )
+    }
+
+    // Async function to handle deletion of task lists
+    private func deleteTaskList(_ taskList: TaskList) {
+        Task {
+            do {
+                try await listService.deleteTaskList(taskList)
+            } catch {
+                // Handle error if necessary
+            }
+        }
+    }
     
+    // Helper function to fetch TaskList based on selectedListID
+    private func fetchSelectedTaskList() -> TaskList? {
+        guard let selectedListID = selectedListID else { return nil }
+        return listService.taskLists.first { $0.objectID == selectedListID }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
                 VStack {
                     ScrollView {
                         LazyVStack(spacing: 16) {
-                            ForEach(reminderService.taskLists, id: \.self) { taskList in
-                                let viewModel = ListDetailViewModel(
-                                    context: context,
-                                    taskList: taskList,
-                                    reminderService: reminderService,
-                                    locationService: locationService
-                                )
+                            ForEach(listService.taskLists, id: \.self) { taskList in
                                 ListItemView(
                                     taskList: taskList,
                                     selectedListID: $selectedListID,
                                     onDelete: {
-                                        Task {
-                                            do {
-                                                try await reminderService.deleteTaskList(taskList)
-                                            } catch {
-                                                // Handle error
-                                            }
-                                        }
+                                        deleteTaskList(taskList)
                                     },
-                                    viewModel: viewModel
+                                    viewModel: viewModelForTaskList(taskList)
                                 )
                             }
                         }
@@ -64,15 +83,42 @@ struct ListsView: View {
                     appSettings: appSettings,
                     showTip: $showFloatingActionButtonTip,
                     tip: floatingActionButtonTip,
-                    menuItems: [.addReminder, .addNewList],
+                    menuItems: [.addReminder, .addNewList, .addSubHeading, .edit, .delete, .schedule],
                     onMenuItemSelected: { item in
                         switch item {
                         case .addReminder:
                             showAddReminderView = true
                         case .addNewList:
                             showAddNewListView = true
-                        default:
-                            break
+                        case .addSubHeading:
+                            if let taskList = fetchSelectedTaskList() {
+                                Task {
+                                    do {
+                                        try await listService.updateTaskList(taskList, name: taskList.name ?? "task list", color: .blue, symbol: "text.badge.plus")
+                                      
+                                    } catch {
+                                        // Handle error if necessary
+                                    }
+                                }
+                            } else {
+                                // Handle case when no list is selected
+                            }
+                        case .edit:
+                            if let taskList = fetchSelectedTaskList() {
+                                selectedTaskList = taskList
+                                showEditListView = true
+                            }
+                        case .delete:
+                            if let taskList = fetchSelectedTaskList() {
+                                deleteTaskList(taskList)
+                            } else {
+                                // Handle case when no list is selected
+                            }
+                        case .schedule:
+                            if let taskList = fetchSelectedTaskList() {
+                                selectedTaskList = taskList
+                                showScheduleView = true
+                            }
                         }
                     }
                 )
@@ -108,7 +154,7 @@ struct ListsView: View {
         }
         .onAppear {
             Task {
-                try await reminderService.updateTaskLists()
+                try await listService.updateTaskLists()
             }
         }
     }

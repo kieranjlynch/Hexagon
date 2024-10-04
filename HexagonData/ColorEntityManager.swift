@@ -10,7 +10,7 @@ import AppIntents
 import UIKit
 import Foundation
 
-public struct ColorEntity: AppEntity, Identifiable {
+public struct ColorManager: AppEntity, Identifiable, Codable {
     public let id: UUID
     public let color: Color
 
@@ -31,22 +31,42 @@ public struct ColorEntity: AppEntity, Identifiable {
     }
 
     public static var defaultQuery = ColorQuery()
+
+    public enum CodingKeys: String, CodingKey {
+        case id, color
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        let colorComponents = try container.decode([CGFloat].self, forKey: .color)
+        color = Color(red: colorComponents[0], green: colorComponents[1], blue: colorComponents[2], opacity: colorComponents[3])
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        let uiColor = UIColor(color)
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        try container.encode([red, green, blue, alpha], forKey: .color)
+    }
 }
 
 public struct ColorQuery: EntityQuery {
     public init() {}
     
-    public func entities(for identifiers: [UUID]) async throws -> [ColorEntity] {
+    public func entities(for identifiers: [UUID]) async throws -> [ColorManager] {
         let allColors = try await suggestedEntities()
         return allColors.filter { identifiers.contains($0.id) }
     }
 
-    public func suggestedEntities() async throws -> [ColorEntity] {
+    public func suggestedEntities() async throws -> [ColorManager] {
         [
-            ColorEntity(id: UUID(), color: .red),
-            ColorEntity(id: UUID(), color: .blue),
-            ColorEntity(id: UUID(), color: .green),
-            ColorEntity(id: UUID(), color: .yellow)
+            ColorManager(id: UUID(), color: .red),
+            ColorManager(id: UUID(), color: .blue),
+            ColorManager(id: UUID(), color: .green),
+            ColorManager(id: UUID(), color: .yellow)
         ]
     }
 }

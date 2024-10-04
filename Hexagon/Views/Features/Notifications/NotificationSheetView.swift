@@ -102,7 +102,7 @@ struct NotificationSheetView: View {
 
     private func fetchLocations() async {
         do {
-            locations = try await reminderService.fetchLocations()
+            locations = try await locationService.fetchLocations()
         } catch {
             print("Error fetching locations: \(error)")
         }
@@ -110,7 +110,7 @@ struct NotificationSheetView: View {
 
     private func saveLocation(name: String, latitude: Double, longitude: Double) async {
         do {
-            let newLocation = try await reminderService.saveLocation(name: name, latitude: latitude, longitude: longitude)
+            let newLocation = try await locationService.saveLocation(name: name, latitude: latitude, longitude: longitude)
             selectedLocation = newLocation
             await fetchLocations()
         } catch {

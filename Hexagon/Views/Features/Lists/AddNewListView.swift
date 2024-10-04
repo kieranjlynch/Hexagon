@@ -11,6 +11,7 @@ import HexagonData
 struct AddNewListView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var listService: ListService
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var selectedColor: Color
@@ -88,9 +89,9 @@ struct AddNewListView: View {
         let uiColor = UIColor(selectedColor)
         do {
             if let existingList = taskList {
-                try await reminderService.updateTaskList(existingList, name: name, color: uiColor, symbol: selectedSymbol)
+                try await listService.updateTaskList(existingList, name: name, color: uiColor, symbol: selectedSymbol)
             } else {
-                try await reminderService.saveTaskList(name: name, color: uiColor, symbol: selectedSymbol)
+                try await listService.saveTaskList(name: name, color: uiColor, symbol: selectedSymbol)
             }
             dismiss()
         } catch {
@@ -153,43 +154,6 @@ struct AddNewListView: View {
             }
             .padding()
             .background(colorScheme == .dark ? Color.black : Color.white)
-        }
-    }
-    
-    struct SymbolPickerSection: View {
-        @Binding var showSymbolPicker: Bool
-        @Binding var selectedSymbol: String
-        @Binding var selectedColor: Color
-        @Binding var searchText: String
-        var colorScheme: ColorScheme
-        
-        var body: some View {
-            if showSymbolPicker {
-                VStack(spacing: 16) {
-                    SearchBar(searchText: $searchText, colorScheme: colorScheme)
-                    SymbolPickerView(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, searchText: $searchText)
-                        .transition(.move(edge: .leading))
-                }
-                .animation(.easeInOut, value: showSymbolPicker)
-            } else {
-                Button(action: {
-                    withAnimation {
-                        showSymbolPicker.toggle()
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: selectedSymbol)
-                            .foregroundColor(selectedColor)
-                        Text("Choose Symbol")
-                            .foregroundColor(.blue)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color(UIColor.systemGray6))
-                    .cornerRadius(8)
-                }
-                .padding([.horizontal, .vertical])
-            }
         }
     }
 }

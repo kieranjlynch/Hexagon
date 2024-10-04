@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		DA0709642C997D9D002D1F35 /* LocationExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA0709632C997D8D002D1F35 /* LocationExtensions.swift */; };
-		DA0709672C997DB1002D1F35 /* ReminderExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA0709662C997DA3002D1F35 /* ReminderExtensions.swift */; };
 		DA07096E2C99E053002D1F35 /* ListDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA07096D2C99E04F002D1F35 /* ListDetailViewModel.swift */; };
 		DA0709702C99E9B1002D1F35 /* ListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA07096F2C99E9AC002D1F35 /* ListItemView.swift */; };
 		DA1F10D22C9AF13B004A2AB0 /* ReminderRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10D12C9AF139004A2AB0 /* ReminderRow.swift */; };
@@ -22,6 +20,9 @@
 		DA1F10E22C9B0F6E004A2AB0 /* LocationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10E12C9B0F67004A2AB0 /* LocationViewModel.swift */; };
 		DA1F10EB2C9B1CC3004A2AB0 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10EA2C9B1CC2004A2AB0 /* AppSettings.swift */; };
 		DA1F10EE2C9B2147004A2AB0 /* ColorUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10ED2C9B2142004A2AB0 /* ColorUtilities.swift */; };
+		DA28051C2CAEE2A80067601A /* TimelineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA28051B2CAEE2A70067601A /* TimelineViewModel.swift */; };
+		DA28051E2CAEE2E30067601A /* TaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA28051D2CAEE2D80067601A /* TaskView.swift */; };
+		DA2805202CAEE2F80067601A /* TimelineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA28051F2CAEE2F10067601A /* TimelineModels.swift */; };
 		DA33C4E42C9864D9002F2613 /* AddSubHeadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA33C4E32C9864D9002F2613 /* AddSubHeadingView.swift */; };
 		DA33C4E72C986760002F2613 /* AddReminderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA33C4E62C986760002F2613 /* AddReminderViewModel.swift */; };
 		DA33C4E92C9867BB002F2613 /* TitleFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA33C4E82C9867BB002F2613 /* TitleFieldView.swift */; };
@@ -40,13 +41,10 @@
 		DA3BFC382C9C1DAC00E16F05 /* Paywall.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3BFC372C9C1DAC00E16F05 /* Paywall.swift */; };
 		DA3BFC3A2C9C1E2600E16F05 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3BFC392C9C1E2200E16F05 /* SubscriptionManager.swift */; };
 		DA3BFC582C9C372500E16F05 /* TaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */; };
+		DA3C39E42CB046F2001D1FF6 /* HexagonData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; };
+		DA3C39E52CB046F3001D1FF6 /* HexagonData.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DA4A07F42CA15C4000974DE6 /* IdentifiableError.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4A07F32CA15C3F00974DE6 /* IdentifiableError.swift */; };
 		DA5B3F3A2CA6C23900ECF757 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5B3F392CA6C23500ECF757 /* TimelineView.swift */; };
-		DA5B3F422CA6E64F00ECF757 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA6320432C9081D400E58414 /* WidgetKit.framework */; };
-		DA5B3F432CA6E64F00ECF757 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA6320452C9081D400E58414 /* SwiftUI.framework */; };
-		DA5B3F512CA6E65000ECF757 /* HexagonWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DA5B3F412CA6E64F00ECF757 /* HexagonWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		DA5B3F562CA6EDE100ECF757 /* HexagonData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; };
-		DA5B3F572CA6EDE100ECF757 /* HexagonData.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DA66720E2C944588002BF8FC /* VoiceNoteSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA66720D2C944588002BF8FC /* VoiceNoteSheetView.swift */; };
 		DA7D7D4D2C808E3D00CC258C /* HexagonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D4C2C808E3D00CC258C /* HexagonApp.swift */; };
 		DA7D7D562C808E3E00CC258C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA7D7D552C808E3E00CC258C /* Assets.xcassets */; };
@@ -102,6 +100,9 @@
 		DA8213122C93326D00BC9B41 /* CustomButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA8213112C93326D00BC9B41 /* CustomButton.swift */; };
 		DA981FDE2C91F99C00E17318 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA981FDD2C91F99C00E17318 /* Constants.swift */; };
 		DA9C2A302C903DA8006B2837 /* TimeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9C2A2F2C903DA8006B2837 /* TimeSettingsView.swift */; };
+		DAA89D482CB0269D00C8B913 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA6320432C9081D400E58414 /* WidgetKit.framework */; };
+		DAA89D492CB0269D00C8B913 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA6320452C9081D400E58414 /* SwiftUI.framework */; };
+		DAA89D572CB0269E00C8B913 /* HexagonWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DAAB822B2C8B3A0F007605E4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */; };
 		DAB05C1D2C9D8BF400BAC0A0 /* SwipeableTaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */; };
 		DAB05C1F2C9D8EE400BAC0A0 /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB05C1E2C9D8EE200BAC0A0 /* InboxViewModel.swift */; };
@@ -111,6 +112,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		DA3C39E62CB046F3001D1FF6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DA7D7D412C808E3D00CC258C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DAE2A9FF2CA5AC6D0033F4DB;
+			remoteInfo = HexagonData;
+		};
 		DA45A5C72CA572E2004B4E14 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DA7D7D412C808E3D00CC258C /* Project object */;
@@ -118,19 +126,12 @@
 			remoteGlobalIDString = DA7D7D482C808E3D00CC258C;
 			remoteInfo = Hexagon;
 		};
-		DA5B3F4F2CA6E65000ECF757 /* PBXContainerItemProxy */ = {
+		DAA89D552CB0269E00C8B913 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DA7D7D412C808E3D00CC258C /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = DA5B3F402CA6E64F00ECF757;
+			remoteGlobalIDString = DAA89D462CB0269D00C8B913;
 			remoteInfo = HexagonWidgetExtension;
-		};
-		DA5B3F582CA6EDE100ECF757 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = DA7D7D412C808E3D00CC258C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = DAE2A9FF2CA5AC6D0033F4DB;
-			remoteInfo = HexagonData;
 		};
 		DAE2AA042CA5AC6D0033F4DB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -142,13 +143,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		DA5B3F5A2CA6EDE100ECF757 /* Embed Frameworks */ = {
+		DA3C39E82CB046F3001D1FF6 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				DA5B3F572CA6EDE100ECF757 /* HexagonData.framework in Embed Frameworks */,
+				DA3C39E52CB046F3001D1FF6 /* HexagonData.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -159,7 +160,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				DA5B3F512CA6E65000ECF757 /* HexagonWidgetExtension.appex in Embed Foundation Extensions */,
+				DAA89D572CB0269E00C8B913 /* HexagonWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -178,8 +179,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		DA0709632C997D8D002D1F35 /* LocationExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationExtensions.swift; sourceTree = "<group>"; };
-		DA0709662C997DA3002D1F35 /* ReminderExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderExtensions.swift; sourceTree = "<group>"; };
 		DA07096D2C99E04F002D1F35 /* ListDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailViewModel.swift; sourceTree = "<group>"; };
 		DA07096F2C99E9AC002D1F35 /* ListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListItemView.swift; sourceTree = "<group>"; };
 		DA1F10D12C9AF139004A2AB0 /* ReminderRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderRow.swift; sourceTree = "<group>"; };
@@ -193,6 +192,9 @@
 		DA1F10E12C9B0F67004A2AB0 /* LocationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationViewModel.swift; sourceTree = "<group>"; };
 		DA1F10EA2C9B1CC2004A2AB0 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		DA1F10ED2C9B2142004A2AB0 /* ColorUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorUtilities.swift; sourceTree = "<group>"; };
+		DA28051B2CAEE2A70067601A /* TimelineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineViewModel.swift; sourceTree = "<group>"; };
+		DA28051D2CAEE2D80067601A /* TaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskView.swift; sourceTree = "<group>"; };
+		DA28051F2CAEE2F10067601A /* TimelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineModels.swift; sourceTree = "<group>"; };
 		DA33C4E32C9864D9002F2613 /* AddSubHeadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddSubHeadingView.swift; sourceTree = "<group>"; };
 		DA33C4E62C986760002F2613 /* AddReminderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddReminderViewModel.swift; sourceTree = "<group>"; };
 		DA33C4E82C9867BB002F2613 /* TitleFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleFieldView.swift; sourceTree = "<group>"; };
@@ -214,7 +216,6 @@
 		DA45A5C32CA572E2004B4E14 /* HexagonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HexagonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA4A07F32CA15C3F00974DE6 /* IdentifiableError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifiableError.swift; sourceTree = "<group>"; };
 		DA5B3F392CA6C23500ECF757 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
-		DA5B3F412CA6E64F00ECF757 /* HexagonWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HexagonWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA6320432C9081D400E58414 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		DA6320452C9081D400E58414 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		DA66720D2C944588002BF8FC /* VoiceNoteSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteSheetView.swift; sourceTree = "<group>"; };
@@ -275,6 +276,7 @@
 		DA8213112C93326D00BC9B41 /* CustomButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomButton.swift; sourceTree = "<group>"; };
 		DA981FDD2C91F99C00E17318 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		DA9C2A2F2C903DA8006B2837 /* TimeSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeSettingsView.swift; sourceTree = "<group>"; };
+		DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HexagonWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableTaskDetailViewModel.swift; sourceTree = "<group>"; };
 		DAB05C1E2C9D8EE200BAC0A0 /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
@@ -283,12 +285,12 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		DA5B3F522CA6E65000ECF757 /* Exceptions for "HexagonWidget" folder in "HexagonWidgetExtension" target */ = {
+		DAA89D5A2CB0269E00C8B913 /* Exceptions for "HexagonWidget" folder in "HexagonWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = DA5B3F402CA6E64F00ECF757 /* HexagonWidgetExtension */;
+			target = DAA89D462CB0269D00C8B913 /* HexagonWidgetExtension */;
 		};
 		DAE2AA082CA5AC6D0033F4DB /* Exceptions for "HexagonData" folder in "HexagonData" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
@@ -305,10 +307,10 @@
 			path = HexagonTests;
 			sourceTree = "<group>";
 		};
-		DA5B3F442CA6E64F00ECF757 /* HexagonWidget */ = {
+		DAA89D4A2CB0269D00C8B913 /* HexagonWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				DA5B3F522CA6E65000ECF757 /* Exceptions for "HexagonWidget" folder in "HexagonWidgetExtension" target */,
+				DAA89D5A2CB0269E00C8B913 /* Exceptions for "HexagonWidget" folder in "HexagonWidgetExtension" target */,
 			);
 			path = HexagonWidget;
 			sourceTree = "<group>";
@@ -331,21 +333,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		DA5B3F3E2CA6E64F00ECF757 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				DA5B3F432CA6E64F00ECF757 /* SwiftUI.framework in Frameworks */,
-				DA5B3F422CA6E64F00ECF757 /* WidgetKit.framework in Frameworks */,
-				DA5B3F562CA6EDE100ECF757 /* HexagonData.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		DA7D7D462C808E3D00CC258C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				DAE2AA062CA5AC6D0033F4DB /* HexagonData.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAA89D442CB0269D00C8B913 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DAA89D492CB0269D00C8B913 /* SwiftUI.framework in Frameworks */,
+				DAA89D482CB0269D00C8B913 /* WidgetKit.framework in Frameworks */,
+				DA3C39E42CB046F2001D1FF6 /* HexagonData.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -363,6 +365,7 @@
 		DA33C4E52C986740002F2613 /* View_Models */ = {
 			isa = PBXGroup;
 			children = (
+				DA28051B2CAEE2A70067601A /* TimelineViewModel.swift */,
 				DAB05C1E2C9D8EE200BAC0A0 /* InboxViewModel.swift */,
 				DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */,
 				DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */,
@@ -399,6 +402,7 @@
 		DA3BFC3E2C9C24B500E16F05 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				DA28051F2CAEE2F10067601A /* TimelineModels.swift */,
 				DA7D7D8E2C80911A00CC258C /* FilterItem.swift */,
 				DA7D7D642C808EE500CC258C /* FilterType.swift */,
 			);
@@ -600,6 +604,7 @@
 		DA5B3F382CA6C22E00ECF757 /* Timeline */ = {
 			isa = PBXGroup;
 			children = (
+				DA28051D2CAEE2D80067601A /* TaskView.swift */,
 				DA5B3F392CA6C23500ECF757 /* TimelineView.swift */,
 			);
 			path = Timeline;
@@ -621,7 +626,7 @@
 				DA7D7D4B2C808E3D00CC258C /* Hexagon */,
 				DA45A5C42CA572E2004B4E14 /* HexagonTests */,
 				DAE2AA012CA5AC6D0033F4DB /* HexagonData */,
-				DA5B3F442CA6E64F00ECF757 /* HexagonWidget */,
+				DAA89D4A2CB0269D00C8B913 /* HexagonWidget */,
 				DA6320422C9081D400E58414 /* Frameworks */,
 				DA7D7D4A2C808E3D00CC258C /* Products */,
 			);
@@ -633,7 +638,7 @@
 				DA7D7D492C808E3D00CC258C /* Hexagon.app */,
 				DA45A5C32CA572E2004B4E14 /* HexagonTests.xctest */,
 				DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */,
-				DA5B3F412CA6E64F00ECF757 /* HexagonWidgetExtension.appex */,
+				DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -645,7 +650,6 @@
 				DA7D7D4C2C808E3D00CC258C /* HexagonApp.swift */,
 				DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */,
 				DA7D7DE72C80955300CC258C /* ContentView.swift */,
-				DABF81FA2C860492006CE3E7 /* Coredata */,
 				DA4A07F22CA15C3900974DE6 /* Error */,
 				DA3BFC3C2C9C230C00E16F05 /* Managers */,
 				DA3BFC3E2C9C24B500E16F05 /* Models */,
@@ -758,15 +762,6 @@
 			path = Scheduling;
 			sourceTree = "<group>";
 		};
-		DABF81FA2C860492006CE3E7 /* Coredata */ = {
-			isa = PBXGroup;
-			children = (
-				DA0709662C997DA3002D1F35 /* ReminderExtensions.swift */,
-				DA0709632C997D8D002D1F35 /* LocationExtensions.swift */,
-			);
-			path = Coredata;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -803,30 +798,6 @@
 			productReference = DA45A5C32CA572E2004B4E14 /* HexagonTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		DA5B3F402CA6E64F00ECF757 /* HexagonWidgetExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = DA5B3F532CA6E65000ECF757 /* Build configuration list for PBXNativeTarget "HexagonWidgetExtension" */;
-			buildPhases = (
-				DA5B3F3D2CA6E64F00ECF757 /* Sources */,
-				DA5B3F3E2CA6E64F00ECF757 /* Frameworks */,
-				DA5B3F3F2CA6E64F00ECF757 /* Resources */,
-				DA5B3F5A2CA6EDE100ECF757 /* Embed Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				DA5B3F592CA6EDE100ECF757 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				DA5B3F442CA6E64F00ECF757 /* HexagonWidget */,
-			);
-			name = HexagonWidgetExtension;
-			packageProductDependencies = (
-			);
-			productName = HexagonWidgetExtension;
-			productReference = DA5B3F412CA6E64F00ECF757 /* HexagonWidgetExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 		DA7D7D482C808E3D00CC258C /* Hexagon */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = DA7D7D5D2C808E3E00CC258C /* Build configuration list for PBXNativeTarget "Hexagon" */;
@@ -841,12 +812,36 @@
 			);
 			dependencies = (
 				DAE2AA052CA5AC6D0033F4DB /* PBXTargetDependency */,
-				DA5B3F502CA6E65000ECF757 /* PBXTargetDependency */,
+				DAA89D562CB0269E00C8B913 /* PBXTargetDependency */,
 			);
 			name = Hexagon;
 			productName = Hexagon;
 			productReference = DA7D7D492C808E3D00CC258C /* Hexagon.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DAA89D462CB0269D00C8B913 /* HexagonWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DAA89D5B2CB0269E00C8B913 /* Build configuration list for PBXNativeTarget "HexagonWidgetExtension" */;
+			buildPhases = (
+				DAA89D432CB0269D00C8B913 /* Sources */,
+				DAA89D442CB0269D00C8B913 /* Frameworks */,
+				DAA89D452CB0269D00C8B913 /* Resources */,
+				DA3C39E82CB046F3001D1FF6 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DA3C39E72CB046F3001D1FF6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				DAA89D4A2CB0269D00C8B913 /* HexagonWidget */,
+			);
+			name = HexagonWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = HexagonWidgetExtension;
+			productReference = DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		DAE2A9FF2CA5AC6D0033F4DB /* HexagonData */ = {
 			isa = PBXNativeTarget;
@@ -885,11 +880,11 @@
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = DA7D7D482C808E3D00CC258C;
 					};
-					DA5B3F402CA6E64F00ECF757 = {
-						CreatedOnToolsVersion = 16.0;
-					};
 					DA7D7D482C808E3D00CC258C = {
 						CreatedOnToolsVersion = 15.4;
+					};
+					DAA89D462CB0269D00C8B913 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 					DAE2A9FF2CA5AC6D0033F4DB = {
 						CreatedOnToolsVersion = 16.0;
@@ -912,20 +907,13 @@
 				DA7D7D482C808E3D00CC258C /* Hexagon */,
 				DA45A5C22CA572E2004B4E14 /* HexagonTests */,
 				DAE2A9FF2CA5AC6D0033F4DB /* HexagonData */,
-				DA5B3F402CA6E64F00ECF757 /* HexagonWidgetExtension */,
+				DAA89D462CB0269D00C8B913 /* HexagonWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		DA45A5C12CA572E2004B4E14 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		DA5B3F3F2CA6E64F00ECF757 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -941,6 +929,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DAA89D452CB0269D00C8B913 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DAE2A9FE2CA5AC6D0033F4DB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -952,13 +947,6 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		DA45A5BF2CA572E2004B4E14 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		DA5B3F3D2CA6E64F00ECF757 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -981,8 +969,8 @@
 				DA33C4FD2C9868AF002F2613 /* ButtonRowView.swift in Sources */,
 				DA7D7DA92C8091FF00CC258C /* NotificationSettingsView.swift in Sources */,
 				DA7D7D4D2C808E3D00CC258C /* HexagonApp.swift in Sources */,
+				DA28051E2CAEE2E30067601A /* TaskView.swift in Sources */,
 				DA33C4FB2C98689D002F2613 /* PhotosFieldView.swift in Sources */,
-				DA0709672C997DB1002D1F35 /* ReminderExtensions.swift in Sources */,
 				DA7D7DC02C8093BF00CC258C /* ZoomableScrollView.swift in Sources */,
 				DA7D7DBE2C80939300CC258C /* WebView.swift in Sources */,
 				DA1F10D62C9AF184004A2AB0 /* SubheadingHeader.swift in Sources */,
@@ -1024,7 +1012,6 @@
 				DA7D7DA32C8091D000CC258C /* AppearanceSettingsView.swift in Sources */,
 				DA33C4F32C986844002F2613 /* NotificationsFieldView.swift in Sources */,
 				DA33C4F52C98685B002F2613 /* TagsFieldView.swift in Sources */,
-				DA0709642C997D9D002D1F35 /* LocationExtensions.swift in Sources */,
 				DA7EAB9C2C8E2DDA00F577E3 /* HexagonTips.swift in Sources */,
 				DA7D7DCA2C80944700CC258C /* NotificationSheetView.swift in Sources */,
 				DA1F10EB2C9B1CC3004A2AB0 /* AppSettings.swift in Sources */,
@@ -1034,6 +1021,7 @@
 				DA7D7D9B2C80918B00CC258C /* EventView.swift in Sources */,
 				DA7D7DB12C80926200CC258C /* FloatingActionButton.swift in Sources */,
 				DA5B3F3A2CA6C23900ECF757 /* TimelineView.swift in Sources */,
+				DA28051C2CAEE2A80067601A /* TimelineViewModel.swift in Sources */,
 				DA7D7D972C80916000CC258C /* DateHeaderView.swift in Sources */,
 				DA7D7DD02C80947700CC258C /* ListSheetView.swift in Sources */,
 				DA4A07F42CA15C4000974DE6 /* IdentifiableError.swift in Sources */,
@@ -1041,6 +1029,7 @@
 				DA7D7DB52C80929200CC258C /* ColorPickerView.swift in Sources */,
 				DA33C4ED2C98680A002F2613 /* ListFieldView.swift in Sources */,
 				DA7D7DE62C80953E00CC258C /* SwipeableTaskDetailView.swift in Sources */,
+				DA2805202CAEE2F80067601A /* TimelineModels.swift in Sources */,
 				DA1F10E02C9B0EE1004A2AB0 /* LocationPin.swift in Sources */,
 				DA7D7DEA2C80955F00CC258C /* SettingsView.swift in Sources */,
 				DA7D7DCC2C80945600CC258C /* TagsSheetView.swift in Sources */,
@@ -1063,6 +1052,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DAA89D432CB0269D00C8B913 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DAE2A9FC2CA5AC6D0033F4DB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1073,20 +1069,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		DA3C39E72CB046F3001D1FF6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DAE2A9FF2CA5AC6D0033F4DB /* HexagonData */;
+			targetProxy = DA3C39E62CB046F3001D1FF6 /* PBXContainerItemProxy */;
+		};
 		DA45A5C82CA572E2004B4E14 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = DA7D7D482C808E3D00CC258C /* Hexagon */;
 			targetProxy = DA45A5C72CA572E2004B4E14 /* PBXContainerItemProxy */;
 		};
-		DA5B3F502CA6E65000ECF757 /* PBXTargetDependency */ = {
+		DAA89D562CB0269E00C8B913 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = DA5B3F402CA6E64F00ECF757 /* HexagonWidgetExtension */;
-			targetProxy = DA5B3F4F2CA6E65000ECF757 /* PBXContainerItemProxy */;
-		};
-		DA5B3F592CA6EDE100ECF757 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = DAE2A9FF2CA5AC6D0033F4DB /* HexagonData */;
-			targetProxy = DA5B3F582CA6EDE100ECF757 /* PBXContainerItemProxy */;
+			target = DAA89D462CB0269D00C8B913 /* HexagonWidgetExtension */;
+			targetProxy = DAA89D552CB0269E00C8B913 /* PBXContainerItemProxy */;
 		};
 		DAE2AA052CA5AC6D0033F4DB /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1140,88 +1136,6 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Hexagon.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Hexagon";
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		DA5B3F542CA6E65000ECF757 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = HexagonWidget/HexagonWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LPNV6TXTE4;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HexagonWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = HexagonWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.klynch.Hexagon.HexagonWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				XROS_DEPLOYMENT_TARGET = 2.0;
-			};
-			name = Debug;
-		};
-		DA5B3F552CA6E65000ECF757 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = HexagonWidget/HexagonWidget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LPNV6TXTE4;
-				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = HexagonWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = HexagonWidget;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.klynch.Hexagon.HexagonWidget;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				XROS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
 		};
@@ -1453,6 +1367,88 @@
 			};
 			name = Release;
 		};
+		DAA89D582CB0269E00C8B913 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = HexagonWidget/HexagonWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LPNV6TXTE4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HexagonWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HexagonWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.klynch.Hexagon.HexagonWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		DAA89D592CB0269E00C8B913 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = HexagonWidget/HexagonWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LPNV6TXTE4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HexagonWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HexagonWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.klynch.Hexagon.HexagonWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
 		DAE2AA0A2CA5AC6D0033F4DB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1557,15 +1553,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		DA5B3F532CA6E65000ECF757 /* Build configuration list for PBXNativeTarget "HexagonWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				DA5B3F542CA6E65000ECF757 /* Debug */,
-				DA5B3F552CA6E65000ECF757 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		DA7D7D442C808E3D00CC258C /* Build configuration list for PBXProject "Hexagon" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1580,6 +1567,15 @@
 			buildConfigurations = (
 				DA7D7D5E2C808E3E00CC258C /* Debug */,
 				DA7D7D5F2C808E3E00CC258C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DAA89D5B2CB0269E00C8B913 /* Build configuration list for PBXNativeTarget "HexagonWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DAA89D582CB0269E00C8B913 /* Debug */,
+				DAA89D592CB0269E00C8B913 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

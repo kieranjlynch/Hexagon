@@ -14,6 +14,7 @@ struct ListCardView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var taskList: TaskList
     @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var listService: ListService
     @Environment(\.colorScheme) var colorScheme
     @State private var isTargeted = false
     @State private var reminderCount: Int = 0
@@ -35,7 +36,7 @@ struct ListCardView: View {
                     await updateReminderCount()
                 }
             }
-            .onChange(of: taskList.reminders?.count) { _, _ in
+            .onChange(of: taskList.reminders?.count, initial: false) { _, _ in
                 Task {
                     await updateReminderCount()
                 }
@@ -95,6 +96,6 @@ struct ListCardView: View {
     }
 
     private func updateReminderCount() async {
-        reminderCount = await reminderService.getRemindersCountForList(taskList)
+        reminderCount = await listService.getRemindersCountForList(taskList)
     }
 }

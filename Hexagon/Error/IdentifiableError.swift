@@ -7,8 +7,8 @@
 
 import SwiftUI
 
-public struct IdentifiableError: Identifiable, Error {
-    public var id = UUID() 
+public struct IdentifiableError: Identifiable, Equatable, Error {
+    public var id = UUID()
     let error: Error
     let message: String
     
@@ -20,5 +20,9 @@ public struct IdentifiableError: Identifiable, Error {
     init(message: String) {
         self.error = NSError(domain: "", code: 0, userInfo: [NSLocalizedDescriptionKey: message])
         self.message = message
+    }
+    
+    public static func == (lhs: IdentifiableError, rhs: IdentifiableError) -> Bool {
+        lhs.id == rhs.id && lhs.message == rhs.message
     }
 }

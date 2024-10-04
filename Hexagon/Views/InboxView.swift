@@ -19,10 +19,15 @@ struct InboxView: View {
     @State private var showFloatingActionButtonTip = false
     @State private var showAddReminderView = false
     @State private var showAddNewListView = false
-
-    @StateObject private var viewModel = InboxViewModel()
+    @StateObject private var viewModel: InboxViewModel
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
 
     let floatingActionButtonTip: FloatingActionButtonTip = FloatingActionButtonTip()
+    
+    init(reminderService: ReminderService) {
+        _viewModel = StateObject(wrappedValue: InboxViewModel(reminderService: reminderService))
+    }
 
     var body: some View {
         NavigationStack {
@@ -62,7 +67,6 @@ struct InboxView: View {
             .foregroundColor(colorScheme == .dark ? .white : .black)
             .background(colorScheme == .dark ? Color.black : Color.white)
             .task {
-                viewModel.setReminderService(reminderService)
                 await viewModel.loadUnassignedReminders()
             }
             .onChange(of: viewModel.unassignedReminders) { oldValue, newValue in
@@ -108,9 +112,16 @@ struct InboxView: View {
                 await viewModel.loadUnassignedReminders()
             }
         }
-        .alert(item: $viewModel.error) { identifiableError in
-            Alert(title: Text("Error"), message: Text(identifiableError.error.localizedDescription))
-        }
+        .alert("Error", isPresented: Binding(
+            get: { viewModel.error != nil },
+            set: { if !$0 { viewModel.clearError() } }
+        ), actions: {
+            Button("OK") {
+                viewModel.clearError()
+            }
+        }, message: {
+            Text(viewModel.error?.error.localizedDescription ?? "")
+        })
     }
 
     private func deleteReminders(at offsets: IndexSet) {

@@ -6,7 +6,6 @@
 //
 
 import CoreLocation
-import HexagonData
 
 extension Location {
     func toCoordinate() -> CLLocationCoordinate2D {

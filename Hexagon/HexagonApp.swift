@@ -21,6 +21,7 @@ struct Hexagon: App {
     @StateObject private var locationService = LocationService()
     @StateObject private var reminderService = ReminderService.shared
     @StateObject private var appSettings = AppSettings()
+    @StateObject private var listService = ListService.shared // Add this line for ListService
     
     @State private var quickActionDestination: QuickActionDestination?
     @State private var selectedTab: String = "Lists"
@@ -49,15 +50,17 @@ struct Hexagon: App {
                         .environmentObject(appSettings)
                         .environmentObject(reminderService)
                         .environmentObject(locationService)
+                        .environmentObject(listService)  // Inject ListService into the environment
                 } else {
                     ContentView(selectedTab: $selectedTab)
                         .environment(\.managedObjectContext, PersistenceController.shared.persistentContainer.viewContext)
                         .environmentObject(reminderService)
+                        .environmentObject(locationService)
+                        .environmentObject(appSettings)
+                        .environmentObject(listService)  // Inject ListService into the environment
                         .onAppear {
                             print("ReminderService initialized: \(reminderService)")
                         }
-                        .environmentObject(locationService)
-                        .environmentObject(appSettings)
                         .task { try? Tips.resetDatastore() }
                         .onAppear {
                             setupGlobalTint()
