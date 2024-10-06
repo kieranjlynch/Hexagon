@@ -30,7 +30,6 @@ struct ListsView: View {
     @State private var showScheduleView = false
     @State private var selectedTaskList: TaskList?
 
-    // Function to create ViewModel for each taskList
     private func viewModelForTaskList(_ taskList: TaskList) -> ListDetailViewModel {
         return ListDetailViewModel(
             context: context,
@@ -40,18 +39,16 @@ struct ListsView: View {
         )
     }
 
-    // Async function to handle deletion of task lists
     private func deleteTaskList(_ taskList: TaskList) {
         Task {
             do {
                 try await listService.deleteTaskList(taskList)
             } catch {
-                // Handle error if necessary
+              
             }
         }
     }
-    
-    // Helper function to fetch TaskList based on selectedListID
+
     private func fetchSelectedTaskList() -> TaskList? {
         guard let selectedListID = selectedListID else { return nil }
         return listService.taskLists.first { $0.objectID == selectedListID }
@@ -60,23 +57,27 @@ struct ListsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                VStack {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(listService.taskLists, id: \.self) { taskList in
-                                ListItemView(
-                                    taskList: taskList,
-                                    selectedListID: $selectedListID,
-                                    onDelete: {
-                                        deleteTaskList(taskList)
-                                    },
-                                    viewModel: viewModelForTaskList(taskList)
-                                )
+                if listService.taskLists.isEmpty {
+                    ContentUnavailableView("No Lists Available", systemImage: "list.bullet")
+                } else {
+                    VStack {
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                ForEach(listService.taskLists, id: \.self) { taskList in
+                                    ListItemView(
+                                        taskList: taskList,
+                                        selectedListID: $selectedListID,
+                                        onDelete: {
+                                            deleteTaskList(taskList)
+                                        },
+                                        viewModel: viewModelForTaskList(taskList)
+                                    )
+                                }
                             }
+                            .padding()
                         }
-                        .padding()
+                        Spacer()
                     }
-                    Spacer()
                 }
                 
                 FloatingActionButton(
@@ -97,11 +98,11 @@ struct ListsView: View {
                                         try await listService.updateTaskList(taskList, name: taskList.name ?? "task list", color: .blue, symbol: "text.badge.plus")
                                       
                                     } catch {
-                                        // Handle error if necessary
+                                      
                                     }
                                 }
                             } else {
-                                // Handle case when no list is selected
+                               
                             }
                         case .edit:
                             if let taskList = fetchSelectedTaskList() {
@@ -112,7 +113,7 @@ struct ListsView: View {
                             if let taskList = fetchSelectedTaskList() {
                                 deleteTaskList(taskList)
                             } else {
-                                // Handle case when no list is selected
+                             
                             }
                         case .schedule:
                             if let taskList = fetchSelectedTaskList() {

@@ -2,82 +2,54 @@
 //  InboxViewModel.swift
 //  Hexagon
 //
-//  Created by Kieran Lynch on 29/08/2024.
+//  Created by Kieran Lynch on 06/10/2024.
 //
 
 import SwiftUI
-import HexagonData
 import Combine
+import HexagonData
 
 @MainActor
 class InboxViewModel: ObservableObject {
-    @Published var unassignedReminders: [Reminder] = []
-    @Published private(set) var error: IdentifiableError?
+    @Published private(set) var reminders: [Reminder] = []
     private let reminderService: ReminderService
     private var cancellables = Set<AnyCancellable>()
 
     init(reminderService: ReminderService) {
         self.reminderService = reminderService
-        NotificationCenter.default.addObserver(self, selector: #selector(handleReminderAdded), name: .reminderAdded, object: nil)
-        
         setupObservers()
+        Task {
+            await fetchReminders()
+        }
     }
 
-    deinit {
-        NotificationCenter.default.removeObserver(self, name: .reminderAdded, object: nil)
-    }
-    
     private func setupObservers() {
-        reminderService.$reminders
-            .receive(on: DispatchQueue.main)
+        NotificationCenter.default.publisher(for: .reminderAdded)
             .sink { [weak self] _ in
                 Task {
-                    await self?.loadUnassignedReminders()
+                    await self?.fetchReminders()
                 }
             }
             .store(in: &cancellables)
     }
 
-    func loadUnassignedReminders() async {
+    func fetchReminders() async {
         do {
+            await reminderService.debugInboxReminders()
             let fetchedReminders = try await reminderService.fetchUnassignedAndIncompleteReminders()
-            self.unassignedReminders = fetchedReminders
-            print("InboxViewModel updated with \(fetchedReminders.count) reminders")
+            print("InboxViewModel received \(fetchedReminders.count) reminders")
+            self.reminders = fetchedReminders
         } catch {
-            setError(error)
-            print("Error loading unassigned reminders: \(error)")
+            print("Error fetching reminders: \(error)")
         }
     }
 
     func toggleCompletion(for reminder: Reminder) async {
         do {
             try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
-            await loadUnassignedReminders()
+            await fetchReminders()
         } catch {
-            setError(error)
+            print("Error toggling completion: \(error)")
         }
-    }
-
-    func deleteReminder(_ reminder: Reminder) async {
-        do {
-            try await reminderService.deleteReminder(reminder)
-            await loadUnassignedReminders()
-        } catch {
-            setError(error)
-        }
-    }
-
-    @objc private func handleReminderAdded() {
-        Task {
-            await loadUnassignedReminders()
-        }
-    }
-
-    func setError(_ error: Error) {
-        self.error = IdentifiableError(error: error)
-    }
-
-    func clearError() {
-        self.error = nil
     }
 }

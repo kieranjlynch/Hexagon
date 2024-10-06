@@ -2,7 +2,7 @@
 //  CustomFilter+CoreDataClass.swift
 //  HexagonData
 //
-//  Created by Kieran Lynch on 27/09/2024.
+//  Created by Kieran Lynch on 06/10/2024.
 //
 //
 
@@ -13,4 +13,3 @@ import CoreData
 public class CustomFilter: NSManagedObject {
 
 }
-

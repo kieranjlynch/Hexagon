@@ -37,25 +37,29 @@ public struct SearchView: View {
                     searchSummary(for: selectedSearch)
                 }
 
-                List(viewModel.searchResults, id: \.objectID) { reminder in
-                    TaskCardView(
-                        reminder: reminder,
-                        onTap: {
-                            Task { @MainActor in
-                                viewModel.selectedReminder = reminder
-                            }
-                        },
-                        onToggleCompletion: {
-                            Task {
-                                viewModel.toggleCompletion(for: reminder)
-                            }
-                        },
-                        selectedDate: Date(),
-                        selectedDuration: 60.0
-                    )
-                    .listRowSeparator(.hidden, edges: .all)
+                if viewModel.searchResults.isEmpty, !viewModel.searchText.isEmpty {
+                    ContentUnavailableView.search(text: viewModel.searchText)
+                } else {
+                    List(viewModel.searchResults, id: \.objectID) { reminder in
+                        TaskCardView(
+                            reminder: reminder,
+                            onTap: {
+                                Task { @MainActor in
+                                    viewModel.selectedReminder = reminder
+                                }
+                            },
+                            onToggleCompletion: {
+                                Task {
+                                    viewModel.toggleCompletion(for: reminder)
+                                }
+                            },
+                            selectedDate: Date(),
+                            selectedDuration: 60.0
+                        )
+                        .listRowSeparator(.hidden, edges: .all)
+                    }
+                    .listStyle(.plain)
                 }
-                .listStyle(.plain)
             }
             .navigationTitle("Search")
             .foregroundColor(colorScheme == .dark ? .white : .black)

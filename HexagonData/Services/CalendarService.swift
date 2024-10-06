@@ -14,6 +14,8 @@ public class CalendarService {
     
     private let eventStore = EKEventStore()
     
+    public init() {}
+    
     public func saveTaskToCalendar(title: String, startDate: Date, duration: TimeInterval) async throws {
         let authorizationStatus = try await eventStore.requestFullAccessToEvents()
         guard authorizationStatus else {

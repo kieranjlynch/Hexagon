@@ -1,9 +1,9 @@
-//
-//  ReminderRow.swift
-//  Hexagon
-//
-//  Created by Kieran Lynch on 18/09/2024.
-//
+    //
+    //  ReminderRow.swift
+    //  Hexagon
+    //
+    //  Created by Kieran Lynch on 18/09/2024.
+    //
 
 import SwiftUI
 import CoreData

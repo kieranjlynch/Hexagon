@@ -1,8 +1,8 @@
 //
 //  Reminder+CoreDataProperties.swift
-//  Hexagon
+//  HexagonData
 //
-//  Created by Kieran Lynch on 03/10/2024.
+//  Created by Kieran Lynch on 06/10/2024.
 //
 //
 
@@ -18,6 +18,7 @@ extension Reminder {
 
     @NSManaged public var endDate: Date?
     @NSManaged public var isCompleted: Bool
+    @NSManaged public var isInInbox: Bool
     @NSManaged public var notes: String?
     @NSManaged public var notifications: String?
     @NSManaged public var order: Int16
@@ -29,7 +30,6 @@ extension Reminder {
     @NSManaged public var tag: String?
     @NSManaged public var title: String?
     @NSManaged public var url: String?
-    @NSManaged public var isInInbox: Bool
     @NSManaged public var list: TaskList?
     @NSManaged public var location: Location?
     @NSManaged public var photos: NSSet?

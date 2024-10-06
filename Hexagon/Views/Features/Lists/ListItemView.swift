@@ -11,7 +11,7 @@ import HexagonData
 
 struct ListItemView: View {
     let taskList: TaskList
-    @Binding var selectedListID: NSManagedObjectID? 
+    @Binding var selectedListID: NSManagedObjectID?
     var onDelete: () -> Void
     @State private var showEditView = false
     @Environment(\.managedObjectContext) var context
@@ -22,7 +22,7 @@ struct ListItemView: View {
         NavigationLink(
             destination: ListDetailView(
                 selectedListID: $selectedListID,
-                viewModel: viewModel  
+                viewModel: viewModel
             )
         ) {
             ListCardView(

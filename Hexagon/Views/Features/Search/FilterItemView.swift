@@ -1,9 +1,9 @@
-//
-//  FilterItemView.swift
-//  Hexagon
-//
-//  Created by Kieran Lynch on 29/08/2024.
-//
+    //
+    //  FilterItemView.swift
+    //  Hexagon
+    //
+    //  Created by Kieran Lynch on 29/08/2024.
+    //
 
 import SwiftUI
 import Foundation

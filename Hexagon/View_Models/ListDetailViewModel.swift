@@ -1,9 +1,9 @@
-//
-//  ListDetailViewModel.swift
-//  Hexagon
-//
-//  Created by Kieran Lynch on 17/09/2024.
-//
+    //
+    //  ListDetailViewModel.swift
+    //  Hexagon
+    //
+    //  Created by Kieran Lynch on 17/09/2024.
+    //
 
 import SwiftUI
 import CoreData

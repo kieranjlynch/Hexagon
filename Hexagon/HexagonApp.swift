@@ -21,15 +21,14 @@ struct Hexagon: App {
     @StateObject private var locationService = LocationService()
     @StateObject private var reminderService = ReminderService.shared
     @StateObject private var appSettings = AppSettings()
-    @StateObject private var listService = ListService.shared // Add this line for ListService
+    @StateObject private var listService = ListService.shared
     
     @State private var quickActionDestination: QuickActionDestination?
     @State private var selectedTab: String = "Lists"
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = false
+    @State private var isCoreDataInitialized = false
     
     private var logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "AppLifecycle")
-    
-    @State private var coreDataInitialized = false
     
     init() {
         logger.info("App initialization started")
@@ -44,29 +43,29 @@ struct Hexagon: App {
     
     var body: some Scene {
         WindowGroup {
-            if coreDataInitialized {
-                if !hasLaunchedBefore {
+            Group {
+                if !isCoreDataInitialized {
+                    ProgressView("Loading...")
+                } else if !hasLaunchedBefore {
                     WelcomeView()
                         .environmentObject(appSettings)
                         .environmentObject(reminderService)
                         .environmentObject(locationService)
-                        .environmentObject(listService)  // Inject ListService into the environment
+                        .environmentObject(listService)
                 } else {
                     ContentView(selectedTab: $selectedTab)
                         .environment(\.managedObjectContext, PersistenceController.shared.persistentContainer.viewContext)
                         .environmentObject(reminderService)
                         .environmentObject(locationService)
                         .environmentObject(appSettings)
-                        .environmentObject(listService)  // Inject ListService into the environment
+                        .environmentObject(listService)
                         .onAppear {
                             print("ReminderService initialized: \(reminderService)")
-                        }
-                        .task { try? Tips.resetDatastore() }
-                        .onAppear {
                             setupGlobalTint()
                             setupQuickActionObserver()
                             updateDynamicQuickActions()
                         }
+                        .task { try? Tips.resetDatastore() }
                         .onOpenURL { url in
                             handleQuickAction(url)
                         }
@@ -78,11 +77,10 @@ struct Hexagon: App {
                             }
                         }
                 }
-            } else {
-                ProgressView("Initializing Core Data...")
-                    .onAppear {
-                        initializeCoreDataAsync()
-                    }
+            }
+            .task {
+                await initializeCoreDataAsync()
+                isCoreDataInitialized = true
             }
         }
         .commands {
@@ -95,18 +93,13 @@ struct Hexagon: App {
         .handlesExternalEvents(matching: Set(["addTask"]))
     }
     
-    private func initializeCoreDataAsync() {
-        Task {
-            do {
-                try await PersistenceController.shared.initialize()
-                await MainActor.run {
-                    coreDataInitialized = true
-                }
-                logger.info("Core Data initialized successfully")
-                checkTaskLists()
-            } catch {
-                logger.error("Core Data initialization failed: \(error.localizedDescription)")
-            }
+    private func initializeCoreDataAsync() async {
+        do {
+            try await PersistenceController.shared.initialize()
+            logger.info("Core Data initialized successfully")
+            checkTaskLists()
+        } catch {
+            logger.error("Core Data initialization failed: \(error.localizedDescription)")
         }
     }
     

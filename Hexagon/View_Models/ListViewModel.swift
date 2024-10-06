@@ -13,14 +13,30 @@ import HexagonData
 @MainActor
 class ListViewModel: ObservableObject {
     @Published var subHeadings: [SubHeading] = []
+    @Published var taskLists: [TaskList] = []
+    @Published var selectedFilter: ListFilter = .all
+    
     private let context: NSManagedObjectContext
     private let reminderService: ReminderService
     private let subheadingService: SubheadingService
+    private let listService = ListService.shared
     
     init(context: NSManagedObjectContext, reminderService: ReminderService) {
         self.context = context
         self.reminderService = reminderService
         self.subheadingService = SubheadingService(context: context)
+        
+        Task {
+            await self.loadTaskLists()
+        }
+    }
+    
+    func loadTaskLists() async {
+        do {
+            self.taskLists = try await listService.updateTaskLists()
+        } catch {
+            print("Failed to load task lists: \(error)")
+        }
     }
     
     func fetchSubHeadings(for taskList: TaskList?) async {
