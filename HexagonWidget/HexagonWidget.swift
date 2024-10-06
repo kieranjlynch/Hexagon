@@ -1,10 +1,3 @@
-//
-//  HexagonWidget.swift
-//  HexagonWidget
-//
-//  Created by Kieran Lynch on 04/10/2024.
-//
-
 import WidgetKit
 import SwiftUI
 import HexagonData
@@ -50,7 +43,6 @@ struct Provider: AppIntentTimelineProvider {
                 reminders: reminders
             )
         } catch {
-            print("Error fetching data for widget: \(error)")
             return SimpleEntry(date: Date(), taskList: nil, reminderCount: 0, configuration: configuration, reminders: [])
         }
     }
@@ -64,11 +56,21 @@ struct SimpleEntry: TimelineEntry {
     let reminders: [Reminder]
 }
 
-struct HexagonWidgetEntryView : View {
+struct HexagonWidgetEntryView: View {
     @Environment(\.widgetFamily) var widgetFamily
     var entry: Provider.Entry
     
     var body: some View {
+        ZStack {
+            contentView
+        }
+        .containerBackground(for: .widget) {
+            Color(UIColor.systemBackground)
+        }
+    }
+    
+    @ViewBuilder
+    var contentView: some View {
         switch widgetFamily {
         case .systemSmall:
             smallWidget
@@ -90,104 +92,211 @@ struct HexagonWidgetEntryView : View {
     }
     
     var smallWidget: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack {
             if let taskList = entry.taskList {
                 Text(taskList.name ?? "Unnamed List")
-                    .font(.headline)
-                    .lineLimit(1)
-                Text("\(entry.reminderCount) tasks")
                     .font(.subheadline)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Text("No list selected")
                     .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            Spacer()
+
+            Text("\(entry.reminderCount)")
+                .font(.system(size: 50))
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Spacer()
+
+            Text("tasks")
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .center)
         }
         .padding()
     }
     
     var mediumWidget: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                if let taskList = entry.taskList {
-                    Text(taskList.name ?? "Unnamed List")
-                        .font(.headline)
-                    Text("\(entry.reminderCount) incomplete tasks")
-                        .font(.subheadline)
-                    Text("Last updated: \(entry.date, style: .time)")
-                        .font(.caption)
-                } else {
-                    Text("No list selected")
-                        .font(.headline)
-                }
-            }
-            Spacer()
-            CircularProgressView(progress: Double(entry.reminderCount) / Double(max(entry.reminders.count, 1)))
-        }
-        .padding()
-    }
-    
-    var largeWidget: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let taskList = entry.taskList {
-                Text(taskList.name ?? "Unnamed List")
-                    .font(.headline)
-                Text("\(entry.reminderCount) incomplete tasks")
-                    .font(.subheadline)
-                Divider()
-                ForEach(entry.reminders.prefix(5), id: \.reminderID) { reminder in
-                    HStack {
-                        Image(systemName: reminder.isCompleted ? "checkmark.circle.fill" : "circle")
-                        Text(reminder.title ?? "Untitled")
-                            .lineLimit(1)
-                    }
-                }
-                if entry.reminders.count > 5 {
-                    Text("+ \(entry.reminders.count - 5) more")
-                        .font(.caption)
-                }
-            } else {
-                Text("No list selected")
-                    .font(.headline)
-            }
-        }
-        .padding()
-    }
-    
-    var extraLargeWidget: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let taskList = entry.taskList {
+        ZStack {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    VStack(alignment: .leading) {
+                    if let taskList = entry.taskList {
                         Text(taskList.name ?? "Unnamed List")
-                            .font(.title)
-                        Text("\(entry.reminderCount) incomplete tasks")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(entry.reminderCount) tasks")
+                            .font(.subheadline)
+                    } else {
+                        Text("No list selected")
                             .font(.headline)
                     }
-                    Spacer()
-                    CircularProgressView(progress: Double(entry.reminderCount) / Double(max(entry.reminders.count, 1)))
                 }
-                Divider()
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                    ForEach(entry.reminders.prefix(10), id: \.reminderID) { reminder in
+
+                if !entry.reminders.isEmpty {
+                    ForEach(entry.reminders.prefix(3), id: \.reminderID) { reminder in
                         HStack {
-                            Image(systemName: reminder.isCompleted ? "checkmark.circle.fill" : "circle")
-                            Text(reminder.title ?? "Untitled")
+                            completionToggleButton(isCompleted: reminder.isCompleted) {
+                                toggleReminderCompletion(reminder)
+                            }
+                            Text(reminder.title ?? "Unnamed Task")
+                                .font(.body)
                                 .lineLimit(1)
+                                .strikethrough(reminder.isCompleted)
                         }
                     }
+                } else {
+                    Text("No tasks available")
+                        .font(.body)
                 }
-                if entry.reminders.count > 10 {
-                    Text("+ \(entry.reminders.count - 10) more")
-                        .font(.caption)
+            }
+            .padding()
+
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    addButton
                 }
-            } else {
-                Text("No list selected")
-                    .font(.title)
+                .padding()
             }
         }
-        .padding()
     }
-    
+
+    var largeWidget: some View {
+        ZStack {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    if let taskList = entry.taskList {
+                        Text(taskList.name ?? "Unnamed List")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(entry.reminderCount) tasks")
+                            .font(.subheadline)
+                    } else {
+                        Text("No list selected")
+                            .font(.headline)
+                    }
+                }
+
+                Divider()
+
+                if !entry.reminders.isEmpty {
+                    ForEach(entry.reminders.prefix(8), id: \.reminderID) { reminder in
+                        HStack {
+                            completionToggleButton(isCompleted: reminder.isCompleted) {
+                                toggleReminderCompletion(reminder)
+                            }
+                            Text(reminder.title ?? "Unnamed Task")
+                                .font(.body)
+                                .lineLimit(1)
+                                .strikethrough(reminder.isCompleted)
+                        }
+                    }
+
+                    if entry.reminders.count > 8 {
+                        Text("+ \(entry.reminders.count - 8) more")
+                            .font(.caption)
+                    }
+                } else {
+                    Text("No tasks available")
+                        .font(.body)
+                }
+            }
+            .padding()
+
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    addButton
+                }
+                .padding()
+            }
+        }
+    }
+
+    var extraLargeWidget: some View {
+        ZStack {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    if let taskList = entry.taskList {
+                        Text(taskList.name ?? "Unnamed List")
+                            .font(.title)
+                        Spacer()
+                        Text("\(entry.reminderCount) tasks")
+                            .font(.headline)
+                    } else {
+                        Text("No list selected")
+                            .font(.title)
+                    }
+                }
+
+                Divider()
+
+                if !entry.reminders.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(entry.reminders.prefix(8), id: \.reminderID) { reminder in
+                            HStack {
+                                completionToggleButton(isCompleted: reminder.isCompleted) {
+                                    toggleReminderCompletion(reminder)
+                                }
+                                Text(reminder.title ?? "Unnamed Task")
+                                    .font(.body)
+                                    .lineLimit(1)
+                                    .strikethrough(reminder.isCompleted)
+                            }
+                        }
+                    }
+
+                    if entry.reminders.count > 8 {
+                        Text("+ \(entry.reminders.count - 8) more")
+                            .font(.caption)
+                    }
+                } else {
+                    Text("No tasks available")
+                        .font(.body)
+                }
+            }
+            .padding()
+
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    addButton
+                }
+                .padding()
+            }
+        }
+    }
+
+    private var addButton: some View {
+        Button(action: {
+            // Add task action
+        }) {
+            Image(systemName: "plus.circle.fill")
+                .foregroundColor(.blue)
+                .font(.system(size: 30))
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func completionToggleButton(isCompleted: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isCompleted ? .green : .gray)
+                .font(.system(size: 20))
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func toggleReminderCompletion(_ reminder: Reminder) {
+        reminder.isCompleted.toggle()
+    }
+
     var circularAccessoryWidget: some View {
         VStack {
             if let taskList = entry.taskList {
@@ -229,36 +338,12 @@ struct HexagonWidgetEntryView : View {
     }
 }
 
-struct CircularProgressView: View {
-    var progress: Double
-    
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(lineWidth: 8.0)
-                .opacity(0.3)
-                .foregroundColor(Color.blue)
-            
-            Circle()
-                .trim(from: 0.0, to: CGFloat(min(self.progress, 1.0)))
-                .stroke(style: StrokeStyle(lineWidth: 8.0, lineCap: .round, lineJoin: .round))
-                .foregroundColor(Color.blue)
-                .rotationEffect(Angle(degrees: 270.0))
-            
-            Text(String(format: "%.0f%%", min(self.progress, 1.0)*100.0))
-                .font(.caption)
-                .bold()
-        }
-    }
-}
-
 struct HexagonWidget: Widget {
     let kind: String = "HexagonWidget"
     
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             HexagonWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Task List Widget")
         .description("Display your tasks from a selected list.")
@@ -271,5 +356,92 @@ struct HexagonWidget: Widget {
             .accessoryRectangular,
             .accessoryInline
         ])
+        .contentMarginsDisabled()
+    }
+}
+
+struct HexagonWidgetEntryView_Previews: PreviewProvider {
+    static var previews: some View {
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        
+        let mockTaskList = TaskList(context: context)
+        mockTaskList.listID = UUID()
+        mockTaskList.name = "Home"
+        
+        let mockReminder1 = Reminder(context: context)
+        mockReminder1.reminderID = UUID()
+        mockReminder1.title = "Mock Task 1"
+        mockReminder1.isCompleted = false
+        
+        let mockReminder2 = Reminder(context: context)
+        mockReminder2.reminderID = UUID()
+        mockReminder2.title = "Mock Task 2"
+        mockReminder2.isCompleted = true
+        
+        return Group {
+
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .systemSmall))
+            
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .systemMedium))
+            
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .systemLarge))
+            
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .systemExtraLarge))
+            
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .accessoryCircular))
+            
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .accessoryRectangular))
+            
+            HexagonWidgetEntryView(entry: SimpleEntry(
+                date: Date(),
+                taskList: mockTaskList,
+                reminderCount: 2,
+                configuration: ConfigurationAppIntent(),
+                reminders: [mockReminder1, mockReminder2]
+            ))
+            .previewContext(WidgetPreviewContext(family: .accessoryInline))
+        }
     }
 }

@@ -18,11 +18,35 @@ struct HexagonTests {
     
     let testPersistenceController: PersistenceController
     let reminderService: ReminderService
+    let listService: ListService
+    let tagService: TagService
+    let calendarService: CalendarService
+    let photoService: PhotoService
+    let locationService: LocationService
+    let subheadingService: SubheadingService
     
     init() {
         _ = Bundle(for: PersistenceController.self)
         testPersistenceController = PersistenceController.inMemoryController()
-        reminderService = ReminderService(persistenceController: testPersistenceController)
+        
+        listService = ListService(persistenceController: testPersistenceController)
+        tagService = TagService(persistenceController: testPersistenceController)
+        calendarService = CalendarService()
+        photoService = PhotoService(persistenceController: testPersistenceController)
+        locationService = LocationService()
+        
+        let context = testPersistenceController.persistentContainer.viewContext
+        subheadingService = SubheadingService(context: context)
+        
+        reminderService = ReminderService(
+            persistenceController: testPersistenceController,
+            listService: listService,
+            tagService: tagService,
+            calendarService: calendarService,
+            photoService: photoService,
+            locationService: locationService,
+            subheadingService: subheadingService
+        )
     }
     
     @Test("ReminderService - Save and Fetch Reminder")
@@ -103,7 +127,6 @@ struct HexagonTests {
     @Test("SubheadingService - Save and Fetch Subheading")
     func testSaveAndFetchSubheading() async throws {
         let context = testPersistenceController.persistentContainer.viewContext
-        let subheadingService = SubheadingService(context: context)
         
         let taskList = TaskList(context: context)
         taskList.name = "Test List"
@@ -122,8 +145,6 @@ struct HexagonTests {
     
     @Test("LocationService - Search Locations")
     func testSearchLocations() async throws {
-        let locationService = LocationService()
-        
         let searchResults = try await locationService.search(with: "Eiffel Tower")
         
         #expect(!searchResults.isEmpty)
@@ -155,14 +176,13 @@ struct HexagonTests {
     @Test("ListDetailViewModel - Load Content")
     func testLoadContent() async throws {
         let context = testPersistenceController.persistentContainer.viewContext
-        let reminderService = ReminderService(persistenceController: testPersistenceController)
         
         let taskList = TaskList(context: context)
         taskList.name = "Test List"
         taskList.listID = UUID()
         try context.save()
         
-        let reminder = try await reminderService.saveReminder(
+        _ = try await reminderService.saveReminder(
             title: "Test Reminder",
             startDate: Date(),
             endDate: nil as Date?,
@@ -179,7 +199,7 @@ struct HexagonTests {
             voiceNoteData: nil as Data?
         )
         
-        let viewModel = ListDetailViewModel(context: context, taskList: taskList, reminderService: reminderService, locationService: locationservice)
+        let viewModel = ListDetailViewModel(context: context, taskList: taskList, reminderService: reminderService, locationService: locationService)
         
         await viewModel.loadContent()
         
@@ -189,9 +209,6 @@ struct HexagonTests {
     
     @Test("New task without list appears in InboxView")
     func testNewTaskWithoutListAppearsInInbox() async throws {
-        _ = testPersistenceController.persistentContainer.viewContext
-        let reminderService = ReminderService(persistenceController: testPersistenceController)
-        
         let newReminder = try await reminderService.saveReminder(
             title: "Inbox Task",
             startDate: Date(),
@@ -220,7 +237,6 @@ struct HexagonTests {
     @Test("New task with list appears in ListDetailView")
     func testNewTaskWithListAppearsInListDetail() async throws {
         let context = testPersistenceController.persistentContainer.viewContext
-        let reminderService = ReminderService(persistenceController: testPersistenceController)
         
         let taskList = TaskList(context: context)
         taskList.name = "Test List"

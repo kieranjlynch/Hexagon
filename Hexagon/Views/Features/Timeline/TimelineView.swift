@@ -8,6 +8,18 @@
 import SwiftUI
 import HexagonData
 
+struct HashableTimelineTask: Hashable {
+    let task: TimelineTask
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(task.id)
+    }
+    
+    static func == (lhs: HashableTimelineTask, rhs: HashableTimelineTask) -> Bool {
+        return lhs.task.id == rhs.task.id
+    }
+}
+
 struct TimelineView: View {
     @Environment(\.colorScheme) var colorScheme
     @StateObject private var viewModel: TimelineViewModel
@@ -21,57 +33,72 @@ struct TimelineView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(viewModel.fullDateRange, id: \.self) { date in
-                            VStack(alignment: .leading, spacing: 5) {
-                                HStack(alignment: .top, spacing: 10) {
-                                    Text(formatDate(date))
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                        .frame(width: 90, alignment: .leading)
-                                    
-                                    timelineRow(for: date)
+                if viewModel.tasks.isEmpty {
+                    ContentUnavailableView("No Tasks Available", systemImage: "calendar.badge.clock")
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(viewModel.fullDateRange, id: \.self) { date in
+                                VStack(alignment: .leading, spacing: 5) {
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Text(formatDate(date))
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .frame(width: 90, alignment: .leading)
+                                        
+                                        timelineRow(for: date)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                .padding()
-                Spacer()
-                HStack {
-                    filterControls
+                    .padding()
                     Spacer()
-                    dateToggle
+                    HStack {
+                        filterControls
+                        Spacer()
+                        dateToggle
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle("Timeline")
             .foregroundColor(colorScheme == .dark ? .white : .black)
             .background(colorScheme == .dark ? Color.black : Color.white)
             .task {
                 await viewModel.loadTasks()
+                await viewModel.loadTaskLists()
             }
         }
     }
     
     private var filterControls: some View {
-        Picker("Filter", selection: $viewModel.selectedFilter) {
-            Text("All").tag(ListFilter.all)
-            Text("Inbox").tag(ListFilter.inbox)
-            ForEach(viewModel.taskLists, id: \.listID) { list in
-                Text(list.name ?? "Unnamed List").tag(ListFilter.specificList(list))
+        Menu {
+            Picker(selection: $viewModel.selectedFilter, label: EmptyView()) {
+                Text("All").tag(ListFilter.all)
+                Text("Inbox").tag(ListFilter.inbox)
+                ForEach(viewModel.taskLists, id: \.listID) { list in
+                    Text(list.name ?? "Unnamed List").tag(ListFilter.specificList(list))
+                }
             }
+        } label: {
+            Label("List Filter", systemImage: "line.3.horizontal.decrease.circle")
+                .font(.headline)
+                .padding(8)
         }
-        .pickerStyle(MenuPickerStyle())
     }
-    
+
     private var dateToggle: some View {
-        Picker("Date Type", selection: $isStartDate) {
-            Text("Start Date").tag(true)
-            Text("End Date").tag(false)
+        Menu {
+            Picker(selection: $isStartDate, label: EmptyView()) {
+                Text("Start Date").tag(true)
+                Text("End Date").tag(false)
+            }
+        } label: {
+            Label("Date Filter", systemImage: "line.3.horizontal.decrease.circle")
+                .font(.headline)
+                .padding(8)
         }
-        .pickerStyle(MenuPickerStyle())
         .onChange(of: isStartDate, initial: false) { oldValue, newValue in
             viewModel.updateDateType(isStartDate: newValue)
         }
@@ -79,13 +106,11 @@ struct TimelineView: View {
     
     private func timelineRow(for date: Date) -> some View {
         let tasks = viewModel.tasksForDate(date)
+        let hashableTasks = tasks.map { HashableTimelineTask(task: $0) }
         
         return Group {
-            HStack(alignment: .top, spacing: 10) {
-                ForEach(tasks, id: \.id) { task in
-                    TaskView(task: task)
-                        .background(Color.clear)
-                }
+            FlexibleView(data: hashableTasks, spacing: 5, alignment: .leading) { hashableTask in
+                TaskView(task: hashableTask.task)
             }
         }
     }

@@ -1,5 +1,5 @@
 //
-//  Untitled.swift
+//  IdentifiableError.swift
 //  Hexagon
 //
 //  Created by Kieran Lynch on 23/09/2024.

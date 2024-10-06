@@ -137,34 +137,34 @@ public class AddReminderViewModel: ObservableObject {
     }
     
     public func ensureValidURL(_ urlString: String) -> String {
-        if urlString.isEmpty {
-            return ""
-        } else if urlString.lowercased().hasPrefix("http://") || urlString.lowercased().hasPrefix("https://") {
-            return urlString
-        } else {
-            return "https://" + urlString
+            if urlString.isEmpty {
+                return ""
+            } else if urlString.lowercased().hasPrefix("http://") || urlString.lowercased().hasPrefix("https://") {
+                return urlString
+            } else {
+                return "https://" + urlString
+            }
+        }
+        
+        public func saveVoiceNoteDataToFile(data: Data) -> URL? {
+            let audioFilename = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("voiceNote.m4a")
+            do {
+                try data.write(to: audioFilename)
+                return audioFilename
+            } catch {
+                return nil
+            }
+        }
+        
+        public func searchLocations(query: String) async throws -> [SearchResult] {
+            return try await locationService.search(with: query, coordinate: locationService.currentLocation)
+        }
+        
+        public func startLocationUpdates() {
+            locationService.startUpdatingLocation()
+        }
+        
+        public func requestLocationPermission() {
+            locationService.requestWhenInUseAuthorization()
         }
     }
-    
-    public func saveVoiceNoteDataToFile(data: Data) -> URL? {
-        let audioFilename = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("voiceNote.m4a")
-        do {
-            try data.write(to: audioFilename)
-            return audioFilename
-        } catch {
-            return nil
-        }
-    }
-    
-    public func searchLocations(query: String) async throws -> [SearchResult] {
-        return try await locationService.search(with: query, coordinate: locationService.currentLocation)
-    }
-    
-    public func startLocationUpdates() {
-        locationService.startUpdatingLocation()
-    }
-    
-    public func requestLocationPermission() {
-        locationService.requestWhenInUseAuthorization()
-    }
-}

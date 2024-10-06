@@ -42,7 +42,6 @@
 		DA3BFC3A2C9C1E2600E16F05 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3BFC392C9C1E2200E16F05 /* SubscriptionManager.swift */; };
 		DA3BFC582C9C372500E16F05 /* TaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */; };
 		DA3C39E42CB046F2001D1FF6 /* HexagonData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; };
-		DA3C39E52CB046F3001D1FF6 /* HexagonData.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DA4A07F42CA15C4000974DE6 /* IdentifiableError.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4A07F32CA15C3F00974DE6 /* IdentifiableError.swift */; };
 		DA5B3F3A2CA6C23900ECF757 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5B3F392CA6C23500ECF757 /* TimelineView.swift */; };
 		DA66720E2C944588002BF8FC /* VoiceNoteSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA66720D2C944588002BF8FC /* VoiceNoteSheetView.swift */; };
@@ -90,7 +89,6 @@
 		DA7D7DE82C80955300CC258C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7DE72C80955300CC258C /* ContentView.swift */; };
 		DA7D7DEA2C80955F00CC258C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7DE92C80955F00CC258C /* SettingsView.swift */; };
 		DA7D7DEC2C80956B00CC258C /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7DEB2C80956B00CC258C /* SearchView.swift */; };
-		DA7D7DEE2C80957800CC258C /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7DED2C80957800CC258C /* InboxView.swift */; };
 		DA7D7DF02C80958400CC258C /* ListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7DEF2C80958400CC258C /* ListsView.swift */; };
 		DA7EAB972C8CEB3D00F577E3 /* permissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7EAB962C8CEB3D00F577E3 /* permissionsView.swift */; };
 		DA7EAB992C8E1EF400F577E3 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7EAB982C8E1EF400F577E3 /* WelcomeView.swift */; };
@@ -105,7 +103,8 @@
 		DAA89D572CB0269E00C8B913 /* HexagonWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DAAB822B2C8B3A0F007605E4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */; };
 		DAB05C1D2C9D8BF400BAC0A0 /* SwipeableTaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */; };
-		DAB05C1F2C9D8EE400BAC0A0 /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB05C1E2C9D8EE200BAC0A0 /* InboxViewModel.swift */; };
+		DAD7957A2CB2773F00AD28FF /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD795792CB2773B00AD28FF /* InboxView.swift */; };
+		DAD7957C2CB2774F00AD28FF /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD7957B2CB2774C00AD28FF /* InboxViewModel.swift */; };
 		DAE2AA062CA5AC6D0033F4DB /* HexagonData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; };
 		DAE2AA072CA5AC6D0033F4DB /* HexagonData.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DAE2AA142CA5B2000033F4DB /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA132CA5B2000033F4DB /* UIKit.framework */; platformFilters = (ios, xros, ); };
@@ -149,7 +148,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				DA3C39E52CB046F3001D1FF6 /* HexagonData.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -265,7 +263,6 @@
 		DA7D7DE72C80955300CC258C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		DA7D7DE92C80955F00CC258C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DA7D7DEB2C80956B00CC258C /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
-		DA7D7DED2C80957800CC258C /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
 		DA7D7DEF2C80958400CC258C /* ListsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsView.swift; sourceTree = "<group>"; };
 		DA7D7E172C809E5D00CC258C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DA7EAB962C8CEB3D00F577E3 /* permissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = permissionsView.swift; sourceTree = "<group>"; };
@@ -279,7 +276,8 @@
 		DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HexagonWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableTaskDetailViewModel.swift; sourceTree = "<group>"; };
-		DAB05C1E2C9D8EE200BAC0A0 /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
+		DAD795792CB2773B00AD28FF /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
+		DAD7957B2CB2774C00AD28FF /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
 		DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = HexagonData.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DAE2AA132CA5B2000033F4DB /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
@@ -365,8 +363,8 @@
 		DA33C4E52C986740002F2613 /* View_Models */ = {
 			isa = PBXGroup;
 			children = (
+				DAD7957B2CB2774C00AD28FF /* InboxViewModel.swift */,
 				DA28051B2CAEE2A70067601A /* TimelineViewModel.swift */,
-				DAB05C1E2C9D8EE200BAC0A0 /* InboxViewModel.swift */,
 				DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */,
 				DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */,
 				DA1F10E12C9B0F67004A2AB0 /* LocationViewModel.swift */,
@@ -412,6 +410,7 @@
 		DA3BFC432C9C290400E16F05 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				DAD795792CB2773B00AD28FF /* InboxView.swift */,
 				DA5B3F382CA6C22E00ECF757 /* Timeline */,
 				DAB05C1B2C9D627600BAC0A0 /* Scheduling */,
 				DAB05C1A2C9D625900BAC0A0 /* Settings */,
@@ -684,7 +683,6 @@
 				DA7D7DB02C80926200CC258C /* FloatingActionButton.swift */,
 				DA8213112C93326D00BC9B41 /* CustomButton.swift */,
 				DA7D7DCD2C80946A00CC258C /* PrioritySheetView.swift */,
-				DA7D7DED2C80957800CC258C /* InboxView.swift */,
 				DA1F10D12C9AF139004A2AB0 /* ReminderRow.swift */,
 			);
 			path = Views;
@@ -979,7 +977,6 @@
 				DA33C4F92C986885002F2613 /* VoiceNoteFieldView.swift in Sources */,
 				DA7D7D852C80909200CC258C /* ImagePicker.swift in Sources */,
 				DA1F10E22C9B0F6E004A2AB0 /* LocationViewModel.swift in Sources */,
-				DA7D7DEE2C80957800CC258C /* InboxView.swift in Sources */,
 				DA7D7DDE2C8094FB00CC258C /* ListIconView.swift in Sources */,
 				DA1F10D42C9AF163004A2AB0 /* SubheadingSection.swift in Sources */,
 				DA7D7DC82C80943600CC258C /* AddReminderView.swift in Sources */,
@@ -998,7 +995,6 @@
 				DA7D7DCE2C80946A00CC258C /* PrioritySheetView.swift in Sources */,
 				DA7D7DD62C8094A600CC258C /* LocationView.swift in Sources */,
 				DA7D7D8D2C80910000CC258C /* AdvancedSearchView.swift in Sources */,
-				DAB05C1F2C9D8EE400BAC0A0 /* InboxViewModel.swift in Sources */,
 				DA7D7D912C80912B00CC258C /* FilterItemView.swift in Sources */,
 				DA66720E2C944588002BF8FC /* VoiceNoteSheetView.swift in Sources */,
 				DA7D7DEC2C80956B00CC258C /* SearchView.swift in Sources */,
@@ -1039,8 +1035,10 @@
 				DA7D7DD82C8094B700CC258C /* LinkSheetView.swift in Sources */,
 				DA7D7D8F2C80911A00CC258C /* FilterItem.swift in Sources */,
 				DA33C4FF2C9869E7002F2613 /* ExpandedPhotoOverlayView.swift in Sources */,
+				DAD7957A2CB2773F00AD28FF /* InboxView.swift in Sources */,
 				DA7D7DDC2C8094EC00CC258C /* AddNewListView.swift in Sources */,
 				DAAB822B2C8B3A0F007605E4 /* AppDelegate.swift in Sources */,
+				DAD7957C2CB2774F00AD28FF /* InboxViewModel.swift in Sources */,
 				DA7D7DB32C80928000CC258C /* TaskCardView.swift in Sources */,
 				DA7D7DE82C80955300CC258C /* ContentView.swift in Sources */,
 				DA07096E2C99E053002D1F35 /* ListDetailViewModel.swift in Sources */,
