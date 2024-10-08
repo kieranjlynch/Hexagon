@@ -1,9 +1,9 @@
-    //
-    //  ListDetailViewModel.swift
-    //  Hexagon
-    //
-    //  Created by Kieran Lynch on 17/09/2024.
-    //
+//
+//  ListDetailViewModel.swift
+//  Hexagon
+//
+//  Created by Kieran Lynch on 17/09/2024.
+//
 
 import SwiftUI
 import CoreData
@@ -15,6 +15,7 @@ public class ListDetailViewModel: ObservableObject {
     @Published public var subHeadings: [SubHeading] = []
     @Published public var reminders: [Reminder] = []
     @Published public var error: IdentifiableError?
+    @Published public var listSymbol: String
     
     private let context: NSManagedObjectContext
     public let reminderService: ReminderService
@@ -30,6 +31,7 @@ public class ListDetailViewModel: ObservableObject {
         self.reminderService = reminderService
         self.locationService = locationService
         self.subheadingService = SubheadingService(context: context)
+        self.listSymbol = taskList.symbol ?? "list.bullet"
         
         setupNotificationObserver()
     }
@@ -79,7 +81,7 @@ public class ListDetailViewModel: ObservableObject {
             }
         }
     }
-
+    
     public func toggleCompletion(_ reminder: Reminder) async {
         do {
             try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)

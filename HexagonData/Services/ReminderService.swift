@@ -14,6 +14,7 @@ import CoreLocation
 
 @MainActor
 public class ReminderService: ObservableObject {
+    // MARK: - Properties
     public static let shared = ReminderService(
         persistenceController: PersistenceController.shared,
         listService: ListService.shared,
@@ -25,7 +26,6 @@ public class ReminderService: ObservableObject {
     )
     
     public let persistentContainer: NSPersistentContainer
-    
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.klynch.Hexagon", category: "ReminderService")
     
     @Published public private(set) var reminders: [Reminder] = []
@@ -37,6 +37,7 @@ public class ReminderService: ObservableObject {
     private let locationService: LocationService
     private let subheadingService: SubheadingService
     
+    // MARK: - Initialization
     public init(
         persistenceController: PersistenceController,
         listService: ListService,
@@ -65,6 +66,7 @@ public class ReminderService: ObservableObject {
         }
     }
     
+    // MARK: - Create
     public func saveReminder(
         reminder: Reminder? = nil,
         title: String,
@@ -84,44 +86,160 @@ public class ReminderService: ObservableObject {
     ) async throws -> Reminder {
         logger.info("Saving reminder: title=\(title), list=\(list?.name ?? "No List")")
         
-        let savedReminder = try await persistentContainer.viewContext.perform {
-            let reminderToSave = self.getOrCreateReminder(reminder: reminder, context: self.persistentContainer.viewContext)
-            
-            if reminderToSave.reminderID == nil {
-                reminderToSave.reminderID = UUID()
+        let savedReminder = try await withCheckedThrowingContinuation { continuation in
+            persistentContainer.viewContext.perform {
+                do {
+                    let reminderToSave = self.getOrCreateReminder(reminder: reminder, context: self.persistentContainer.viewContext)
+                    
+                    if reminderToSave.reminderID == nil {
+                        reminderToSave.reminderID = UUID()
+                    }
+                    
+                    self.setReminderProperties(
+                        reminderToSave: reminderToSave,
+                        title: title,
+                        startDate: startDate,
+                        endDate: endDate,
+                        notes: notes,
+                        url: url,
+                        priority: priority,
+                        list: list,
+                        subHeading: subHeading,
+                        tags: tags,
+                        notifications: notifications
+                    )
+                    
+                    self.handleReminderPhotos(reminderToSave: reminderToSave, photos: photos)
+                    self.handleReminderLocation(reminderToSave: reminderToSave, location: location, radius: radius)
+                    self.setReminderVoiceNote(reminderToSave: reminderToSave, voiceNoteData: voiceNoteData)
+                    
+                    try self.persistentContainer.viewContext.save()
+                    
+                    self.logger.info("Saved reminder: id=\(reminderToSave.reminderID?.uuidString ?? "unknown"), title=\(reminderToSave.title ?? ""), isInInbox=\(reminderToSave.isInInbox), list=\(reminderToSave.list?.name ?? "No List"), isCompleted=\(reminderToSave.isCompleted)")
+                    
+                    continuation.resume(returning: reminderToSave)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
-            
-            self.setReminderProperties(
-                reminderToSave: reminderToSave,
-                title: title,
-                startDate: startDate,
-                endDate: endDate,
-                notes: notes,
-                url: url,
-                priority: priority,
-                list: list,
-                subHeading: subHeading,
-                tags: tags,
-                notifications: notifications
-            )
-            
-            reminderToSave.isInInbox = (list == nil)
-            print("Saving reminder: \(reminderToSave.title ?? "Untitled"), isInInbox: \(reminderToSave.isInInbox), list: \(reminderToSave.list?.name ?? "None")")
-            
-            try self.persistentContainer.viewContext.save()
-            
-            self.logger.info("Saved reminder: id=\(reminderToSave.reminderID?.uuidString ?? "unknown"), title=\(reminderToSave.title ?? ""), isInInbox=\(reminderToSave.isInInbox), list=\(reminderToSave.list?.name ?? "No List"), isCompleted=\(reminderToSave.isCompleted)")
-            
-            return reminderToSave
         }
-
-        let allReminders = try await fetchReminders()
-        logger.info("Total reminders after saving: \(allReminders.count)")
-        for reminder in allReminders {
-            logger.info("After save - All reminders: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? ""), isInInbox=\(reminder.isInInbox), isCompleted=\(reminder.isCompleted)")
+        
+        await postSaveOperations(for: savedReminder)
+        
+        if let endDate = endDate {
+            try await calendarService.saveTaskToCalendar(title: savedReminder.title ?? "", startDate: savedReminder.startDate ?? Date(), duration: endDate.timeIntervalSince(savedReminder.startDate ?? Date()) / 60)
         }
         
         return savedReminder
+    }
+    
+    // MARK: - Read
+    public func fetchReminders(
+        withPredicate predicateFormat: String? = nil,
+        predicateArguments: [Any] = [],
+        sortKey: String? = nil,
+        ascending: Bool = true
+    ) async throws -> [Reminder] {
+        return try await persistentContainer.viewContext.perform {
+            let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
+            
+            if let predicateFormat = predicateFormat {
+                request.predicate = NSPredicate(format: predicateFormat, argumentArray: predicateArguments)
+            }
+            
+            request.sortDescriptors = [NSSortDescriptor(key: sortKey ?? "startDate", ascending: ascending)]
+            
+            let fetchedReminders = try self.persistentContainer.viewContext.fetch(request)
+            self.logger.info("Fetched \(fetchedReminders.count) reminders with predicate: \(predicateFormat ?? "None")")
+            return fetchedReminders
+        }
+    }
+    
+    public func getReminder(withID objectID: NSManagedObjectID) throws -> Reminder {
+        let context = persistentContainer.viewContext
+        guard let reminder = try context.existingObject(with: objectID) as? Reminder else {
+            throw NSError(domain: "com.klynch.Hexagon", code: 404, userInfo: [NSLocalizedDescriptionKey: "Reminder not found"])
+        }
+        return reminder
+    }
+    
+    public func fetchUnassignedAndIncompleteReminders() async throws -> [Reminder] {
+        return try await fetchReminders(
+            withPredicate: "(isInInbox == YES OR list == nil) AND (isCompleted == NO OR isCompleted == nil)"
+        )
+    }
+    
+    public func getRemindersForList(_ list: TaskList) async throws -> [Reminder] {
+        return try await fetchReminders(
+            withPredicate: "list == %@",
+            predicateArguments: [list]
+        )
+    }
+    
+    // MARK: - Update
+    public func updateReminderCompletionStatus(reminder: Reminder, isCompleted: Bool) async throws {
+        logger.info("Updating completion status: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? ""), isCompleted=\(isCompleted)")
+        let context = persistentContainer.viewContext
+        try await context.perform {
+            reminder.isCompleted = isCompleted
+            try context.save()
+        }
+        
+        await refreshReminders()
+    }
+    
+    public func updateReminder(_ reminder: Reminder) async throws {
+        let context = persistentContainer.viewContext
+        try await context.perform {
+            try context.save()
+        }
+        await refreshReminders()
+    }
+    
+    public func moveReminder(_ reminder: Reminder, to subHeading: SubHeading?) async throws {
+        try await subheadingService.moveReminder(reminder, to: subHeading)
+        await refreshReminders()
+    }
+    
+    // MARK: - Delete
+    public func deleteReminder(_ reminder: Reminder) async throws {
+        logger.info("Deleting reminder: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? "")")
+        let context = persistentContainer.viewContext
+        try await context.perform {
+            context.delete(reminder)
+            try context.save()
+        }
+        
+        await refreshReminders()
+    }
+    
+    // MARK: - Sort
+    public func reorderReminders(_ reminders: [Reminder]) async throws {
+        let context = persistentContainer.viewContext
+        
+        try await context.perform {
+            for (index, reminder) in reminders.enumerated() {
+                reminder.order = Int16(index)
+            }
+            try context.save()
+        }
+        
+        await refreshReminders()
+    }
+    
+    // MARK: - Helper Methods
+    private func setReminders(_ reminders: [Reminder]) {
+        self.reminders = reminders
+    }
+    
+    private func getOrCreateReminder(reminder: Reminder?, context: NSManagedObjectContext) -> Reminder {
+        if let existingReminder = reminder {
+            return existingReminder
+        } else {
+            let newReminder = Reminder(context: context)
+            newReminder.reminderID = UUID()
+            return newReminder
+        }
     }
     
     private func setReminderProperties(
@@ -147,12 +265,10 @@ public class ReminderService: ObservableObject {
         reminderToSave.notifications = notifications.joined(separator: ",")
         
         let calendar = Calendar.current
-        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: startDate)
-        reminderToSave.startDate = calendar.date(from: startComponents)
+        reminderToSave.startDate = calendar.date(from: calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: startDate))
         
         if let endDate = endDate {
-            let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: endDate)
-            reminderToSave.endDate = calendar.date(from: endComponents)
+            reminderToSave.endDate = calendar.date(from: calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: endDate))
         } else {
             reminderToSave.endDate = nil
         }
@@ -160,45 +276,23 @@ public class ReminderService: ObservableObject {
         reminderToSave.isInInbox = (list == nil)
     }
     
-    private func postSaveOperations(for savedReminder: Reminder) async {
-        NotificationCenter.default.post(name: .reminderAdded, object: nil)
-        
-        locationService.startMonitoringLocation(for: savedReminder)
-        
-        do {
-            let updatedReminders = try await fetchReminders()
-            setReminders(updatedReminders)
-            print("Fetched and updated reminders after saving. Count: \(updatedReminders.count)")
-        } catch {
-            logger.error("Failed to fetch reminders after saving: \(error.localizedDescription)")
+    private func handleReminderPhotos(reminderToSave: Reminder, photos: [UIImage]) {
+        let reminderPhotos = photos.map { photo -> ReminderPhoto in
+            let reminderPhoto = ReminderPhoto(context: self.persistentContainer.viewContext)
+            reminderPhoto.photoData = photo.pngData()
+            return reminderPhoto
         }
+        reminderToSave.photos = NSSet(array: reminderPhotos)
     }
     
-    public func reorderReminders(_ reminders: [Reminder]) async throws {
-        let context = persistentContainer.viewContext
-        
-        try await context.perform {
-            for (index, reminder) in reminders.enumerated() {
-                reminder.order = Int16(index)
-            }
-            try context.save()
-        }
-        
-        let updatedReminders = try await fetchReminders()
-        setReminders(updatedReminders)
-    }
-    
-    public func setReminders(_ reminders: [Reminder]) {
-        self.reminders = reminders
-    }
-    
-    private func getOrCreateReminder(reminder: Reminder?, context: NSManagedObjectContext) -> Reminder {
-        if let existingReminder = reminder {
-            return existingReminder
-        } else {
-            let newReminder = Reminder(context: context)
-            newReminder.reminderID = UUID()
-            return newReminder
+    private func handleReminderLocation(reminderToSave: Reminder, location: CLLocationCoordinate2D?, radius: Double?) {
+        if let location = location, let radius = radius {
+            let locationEntity = Location(context: self.persistentContainer.viewContext)
+            locationEntity.latitude = location.latitude
+            locationEntity.longitude = location.longitude
+            locationEntity.name = "Reminder Location"
+            reminderToSave.location = locationEntity
+            reminderToSave.radius = radius
         }
     }
     
@@ -217,196 +311,19 @@ public class ReminderService: ObservableObject {
         }
     }
     
-    public func fetchAllReminders() async throws -> [Reminder] {
-        logger.info("Starting to fetch all reminders")
-        return try await persistentContainer.viewContext.perform {
-            let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-            request.predicate = nil
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \Reminder.startDate, ascending: true)]
-            
-            do {
-                let fetchedReminders = try self.persistentContainer.viewContext.fetch(request)
-                self.logger.info("Fetched \(fetchedReminders.count) reminders")
-                fetchedReminders.forEach { reminder in
-                    print("Fetched reminder: \(reminder.title ?? "Untitled"), List: \(reminder.list?.name ?? "No List"), IsCompleted: \(reminder.isCompleted)")
-                }
-                return fetchedReminders
-            } catch {
-                self.logger.error("Failed to fetch reminders: \(error.localizedDescription)")
-                throw error
-            }
-        }
+    private func postSaveOperations(for savedReminder: Reminder) async {
+        NotificationCenter.default.post(name: .reminderAdded, object: nil)
+        locationService.startMonitoringLocation(for: savedReminder)
+        await refreshReminders()
     }
     
-    public func debugInboxReminders() async {
+    private func refreshReminders() async {
         do {
-            let context = persistentContainer.viewContext
-            let inboxCount = try await context.perform {
-                let checkInboxRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-                checkInboxRequest.predicate = NSPredicate(format: "isInInbox == YES")
-                return try context.count(for: checkInboxRequest)
-            }
-            print("Number of reminders in inbox: \(inboxCount)")
-
-            let unassignedCount = try await context.perform {
-                let unassignedRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-                unassignedRequest.predicate = NSPredicate(format: "list == nil")
-                return try context.count(for: unassignedRequest)
-            }
-            print("Number of unassigned reminders: \(unassignedCount)")
-
-            let allReminders = try await fetchAllReminders()
-            print("Total number of reminders: \(allReminders.count)")
-            for reminder in allReminders {
-                print("Reminder: \(reminder.title ?? "Untitled"), isInInbox: \(reminder.isInInbox), list: \(reminder.list?.name ?? "None"), isCompleted: \(reminder.isCompleted)")
-            }
+            let updatedReminders = try await fetchReminders()
+            setReminders(updatedReminders)
         } catch {
-            print("Error debugging inbox reminders: \(error)")
+            logger.error("Failed to refresh reminders: \(error.localizedDescription)")
         }
-    }
-    
-    public func fetchUnassignedAndIncompleteReminders() async throws -> [Reminder] {
-        let context = persistentContainer.viewContext
-        return try await context.perform {
-            let allRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-            let allReminders = try context.fetch(allRequest)
-            print("All reminders:")
-            for reminder in allReminders {
-                print("Reminder: \(reminder.title ?? "Untitled"), isInInbox: \(reminder.isInInbox), list: \(reminder.list?.name ?? "None"), isCompleted: \(reminder.isCompleted)")
-            }
-
-            let inboxPredicate = NSPredicate(format: "isInInbox == YES")
-            let unassignedPredicate = NSPredicate(format: "list == nil")
-            let incompletePredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
-                NSPredicate(format: "isCompleted == NO"),
-                NSPredicate(format: "isCompleted == nil")
-            ])
-
-            let inboxRequest = Reminder.fetchRequest()
-            inboxRequest.predicate = inboxPredicate
-            let inboxReminders = try context.fetch(inboxRequest)
-            print("Inbox reminders: \(inboxReminders.count)")
-
-            let unassignedRequest = Reminder.fetchRequest()
-            unassignedRequest.predicate = unassignedPredicate
-            let unassignedReminders = try context.fetch(unassignedRequest)
-            print("Unassigned reminders: \(unassignedReminders.count)")
-
-            let incompleteRequest = Reminder.fetchRequest()
-            incompleteRequest.predicate = incompletePredicate
-            let incompleteReminders = try context.fetch(incompleteRequest)
-            print("Incomplete reminders: \(incompleteReminders.count)")
-            print("Incomplete reminders details:")
-            for reminder in incompleteReminders {
-                print("Reminder: \(reminder.title ?? "Untitled"), isCompleted: \(reminder.isCompleted)")
-            }
-
-            let combinedPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSCompoundPredicate(orPredicateWithSubpredicates: [inboxPredicate, unassignedPredicate]),
-                incompletePredicate
-            ])
-
-            let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-            request.predicate = combinedPredicate
-            let reminders = try context.fetch(request)
-            print("Combined predicate found \(reminders.count) reminders")
-            for reminder in reminders {
-                print("Found reminder: \(reminder.title ?? "Untitled"), isInInbox: \(reminder.isInInbox), list: \(reminder.list?.name ?? "None"), isCompleted: \(reminder.isCompleted)")
-            }
-
-            return reminders
-        }
-    }
-    
-    public func fetchReminders(
-        withPredicate predicateFormat: String? = nil,
-        predicateArguments: [Any] = [],
-        sortKey: String? = nil,
-        ascending: Bool = true
-    ) async throws -> [Reminder] {
-        return try await persistentContainer.viewContext.perform {
-            let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-            
-            if let predicateFormat = predicateFormat {
-                request.predicate = NSPredicate(format: predicateFormat, argumentArray: predicateArguments)
-            }
-            
-            if let sortKey = sortKey {
-                request.sortDescriptors = [NSSortDescriptor(key: sortKey, ascending: ascending)]
-            } else {
-                request.sortDescriptors = [NSSortDescriptor(keyPath: \Reminder.startDate, ascending: true)]
-            }
-            
-            do {
-                let fetchedReminders = try self.persistentContainer.viewContext.fetch(request)
-                self.logger.info("Fetched \(fetchedReminders.count) reminders with predicate: \(predicateFormat ?? "None")")
-                for reminder in fetchedReminders {
-                    self.logger.info("Fetched reminder: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? ""), isInInbox=\(reminder.isInInbox), isCompleted=\(reminder.isCompleted), list=\(reminder.list?.name ?? "No List")")
-                }
-                return fetchedReminders
-            } catch {
-                self.logger.error("Failed to fetch reminders: \(error.localizedDescription)")
-                throw error
-            }
-        }
-    }
-    
-    public func getReminder(withID objectID: NSManagedObjectID) throws -> Reminder {
-        let context = persistentContainer.viewContext
-        guard let reminder = try context.existingObject(with: objectID) as? Reminder else {
-            throw NSError(domain: "com.klynch.Hexagon", code: 404, userInfo: [NSLocalizedDescriptionKey: "Reminder not found"])
-        }
-        return reminder
-    }
-    
-    public func updateReminderCompletionStatus(reminder: Reminder, isCompleted: Bool) async throws {
-        logger.info("Updating completion status: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? ""), isCompleted=\(isCompleted)")
-        let context = persistentContainer.viewContext
-        try await context.perform {
-            reminder.isCompleted = isCompleted
-            try context.save()
-        }
-        
-        NotificationCenter.default.post(name: .reminderAdded, object: nil)
-        let updatedReminders = try await fetchReminders()
-        setReminders(updatedReminders)
-    }
-    
-    public func deleteReminder(_ reminder: Reminder) async throws {
-        logger.info("Deleting reminder: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? "")")
-        let context = persistentContainer.viewContext
-        try await context.perform {
-            context.delete(reminder)
-            try context.save()
-        }
-        
-        NotificationCenter.default.post(name: .reminderAdded, object: nil)
-        let updatedReminders = try await fetchReminders()
-        setReminders(updatedReminders)
-    }
-    
-    public func fetchUnassignedReminders() async throws -> [Reminder] {
-        let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-        request.predicate = NSPredicate(format: "list == nil AND isCompleted == false")
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \Reminder.startDate, ascending: true)]
-        
-        return try await persistentContainer.viewContext.perform {
-            try self.persistentContainer.viewContext.fetch(request)
-        }
-    }
-    
-    public func getRemindersForList(_ list: TaskList) async throws -> [Reminder] {
-        print("Fetching reminders for list: \(list.name ?? "Unnamed List")")
-        let reminders = try await fetchReminders(
-            withPredicate: "list == %@",
-            predicateArguments: [list]
-        )
-        print("Fetched \(reminders.count) reminders for list \(list.name ?? "Unnamed List")")
-        return reminders
-    }
-    
-    public func getUnassignedAndIncompleteReminders() -> [Reminder] {
-        return reminders.filter { $0.list == nil && !$0.isCompleted }
     }
 }
 

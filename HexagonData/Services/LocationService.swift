@@ -9,8 +9,8 @@ import Foundation
 import CoreLocation
 import MapKit
 import UserNotifications
-import Combine
 import CoreData
+import Combine
 
 @MainActor
 public class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate, MKLocalSearchCompleterDelegate {
@@ -149,7 +149,7 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
             try context.fetch(request)
         }
     }
-
+    
     public func saveLocation(name: String, latitude: Double, longitude: Double) async throws -> Location {
         let context = PersistenceController.shared.persistentContainer.viewContext
         return try await context.perform {

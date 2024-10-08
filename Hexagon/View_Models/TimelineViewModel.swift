@@ -35,7 +35,7 @@ class TimelineViewModel: ObservableObject {
     @MainActor
     func loadTasks() async {
         do {
-            let reminders = try await reminderService.fetchAllReminders()
+            let reminders = try await reminderService.fetchReminders()
             self.tasks = reminders.map { reminder in
                 TimelineTask(
                     id: reminder.reminderID ?? UUID(),

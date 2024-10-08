@@ -15,13 +15,11 @@ public struct ListSheetView: View {
     @State private var lists: [TaskList] = []
     @State private var isShowingAddNewList = false
     @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var listService: ListService
     @State private var errorMessage: String?
     
-    private let listService: ListService
-    
-    public init(selectedList: Binding<TaskList?>, listService: ListService) {
+    public init(selectedList: Binding<TaskList?>) {
         self._selectedList = selectedList
-        self.listService = listService
     }
     
     public var body: some View {

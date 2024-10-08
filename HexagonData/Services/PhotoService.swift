@@ -27,13 +27,22 @@ public class PhotoService {
             reminderToSave.photos = nil
         }
         
-        let reminderPhotos = photos.map { createReminderPhoto(from: $0, in: context) }
+        let reminderPhotos = photos.map { photo -> ReminderPhoto in
+            let reminderPhoto = ReminderPhoto(context: context)
+            reminderPhoto.photoData = photo.pngData()
+            return reminderPhoto
+        }
         reminderToSave.photos = NSSet(array: reminderPhotos)
     }
     
-    private func createReminderPhoto(from image: UIImage, in context: NSManagedObjectContext) -> ReminderPhoto {
-        let photo = ReminderPhoto(context: context)
-        photo.photoData = image.jpegData(compressionQuality: 0.8)
-        return photo
+    public func getPhotos(for reminder: Reminder) -> [UIImage] {
+        guard let photos = reminder.photos as? Set<ReminderPhoto> else {
+            return []
+        }
+        
+        return photos.compactMap { photo in
+            guard let photoData = photo.photoData else { return nil }
+            return UIImage(data: photoData)
+        }
     }
 }

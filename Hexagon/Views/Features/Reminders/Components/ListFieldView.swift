@@ -16,7 +16,7 @@ struct ListFieldView: View {
     var body: some View {
         HStack {
             NavigationLink {
-                ListSheetView(selectedList: $selectedList, listService: listService)
+                ListSheetView(selectedList: $selectedList)
             } label: {
                 Label {
                     Text("List")

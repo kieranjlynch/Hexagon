@@ -74,6 +74,8 @@ struct Hexagon: App {
                                 AddReminderView(reminder: nil)
                                     .environmentObject(reminderService)
                                     .environmentObject(appSettings)
+                                    .environmentObject(locationService)
+                                    .environmentObject(listService)
                             }
                         }
                 }

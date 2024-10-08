@@ -13,34 +13,28 @@ import HexagonData
 class InboxViewModel: ObservableObject {
     @Published private(set) var reminders: [Reminder] = []
     private let reminderService: ReminderService
-    private var cancellables = Set<AnyCancellable>()
 
     init(reminderService: ReminderService) {
         self.reminderService = reminderService
-        setupObservers()
         Task {
+            await observeReminderAddedNotifications()
             await fetchReminders()
         }
     }
 
-    private func setupObservers() {
-        NotificationCenter.default.publisher(for: .reminderAdded)
-            .sink { [weak self] _ in
-                Task {
-                    await self?.fetchReminders()
-                }
-            }
-            .store(in: &cancellables)
+    private func observeReminderAddedNotifications() async {
+        for await _ in NotificationCenter.default.notifications(named: .reminderAdded) {
+            await fetchReminders()
+        }
     }
 
     func fetchReminders() async {
         do {
-            await reminderService.debugInboxReminders()
             let fetchedReminders = try await reminderService.fetchUnassignedAndIncompleteReminders()
             print("InboxViewModel received \(fetchedReminders.count) reminders")
             self.reminders = fetchedReminders
         } catch {
-            print("Error fetching reminders: \(error)")
+            print("Error fetching reminders: \(error.localizedDescription)")
         }
     }
 
@@ -49,7 +43,7 @@ class InboxViewModel: ObservableObject {
             try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
             await fetchReminders()
         } catch {
-            print("Error toggling completion: \(error)")
+            print("Error toggling completion: \(error.localizedDescription)")
         }
     }
 }
