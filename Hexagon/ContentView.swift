@@ -15,6 +15,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var reminderService: ReminderService
     @EnvironmentObject var locationService: LocationService
+    @EnvironmentObject var listService: ListService
     @Environment(\.horizontalSizeClass) var horizontalSizeClass
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -188,11 +189,12 @@ struct ContentView: View {
         .environmentObject(reminderService)
         .environmentObject(locationService)
         .environmentObject(appSettings)
+        .environmentObject(listService)
         .errorAlert(errorMessage: $appSettings.errorMessage, isPresented: $appSettings.isErrorPresented)
     }
     
     private var timelineView: some View {
-        TimelineView(reminderService: reminderService, listService: ListService.shared)
+        TimelineView(reminderService: reminderService, listService: listService)
             .environmentObject(reminderService)
             .environmentObject(locationService)
             .environmentObject(appSettings)

@@ -1,9 +1,9 @@
-    //
-    //  AddReminderView.swift
-    //  Hexagon
-    //
-    //  Created by Kieran Lynch on 29/08/2024.
-    //
+//
+//  AddReminderView.swift
+//  Hexagon
+//
+//  Created by Kieran Lynch on 29/08/2024.
+//
 
 import SwiftUI
 import PhotosUI
@@ -12,6 +12,7 @@ import HexagonData
 public struct AddReminderView: View {
     @StateObject private var viewModel: AddReminderViewModel
     @EnvironmentObject public var reminderService: ReminderService
+    @EnvironmentObject public var listService: ListService
     @EnvironmentObject public var locationService: LocationService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -30,16 +31,16 @@ public struct AddReminderView: View {
                     TitleFieldView(title: $viewModel.title, taskType: preferredTaskType, colorScheme: colorScheme)
                         .listRowSeparator(.hidden, edges: .all)
                         .padding(.top, 8)
-
+                    
                     DateFieldsView(startDate: $viewModel.startDate, endDate: $viewModel.endDate, colorScheme: colorScheme)
                         .listRowSeparator(.hidden, edges: .all)
-
+                    
                     ListFieldView(selectedList: $viewModel.selectedList, colorScheme: colorScheme)
                         .listRowSeparator(.hidden, edges: .all)
-
+                    
                     PriorityFieldView(priority: $viewModel.priority, colorScheme: colorScheme)
                         .listRowSeparator(.hidden, edges: .all)
-
+                    
                     LinkFieldView(url: $viewModel.url, colorScheme: colorScheme)
                         .listRowSeparator(.hidden, edges: .all)
                     
@@ -78,6 +79,7 @@ public struct AddReminderView: View {
         .onAppear {
             viewModel.reminderService = reminderService
             viewModel.locationService = locationService
+            viewModel.listService = listService
             DateFormatter.updateSharedDateFormatter()
         }
         .sheet(isPresented: $viewModel.isShowingImagePicker) {
@@ -133,7 +135,7 @@ struct ButtonRow: View {
     let saveAction: () async -> Void
     let dismissAction: () -> Void
     var colorScheme: ColorScheme
-
+    
     var body: some View {
         HStack {
             CustomButton(title: "Cancel", action: dismissAction, style: .secondary)

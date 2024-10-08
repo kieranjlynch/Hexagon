@@ -27,7 +27,7 @@ public class TagService: ObservableObject {
             do {
                 return try self.persistentContainer.viewContext.fetch(request)
             } catch {
-                throw error 
+                throw error
             }
         }
     }

@@ -35,7 +35,17 @@ struct ListDetailView: View {
                 }
                 .padding(.horizontal)
             }
-            .navigationTitle(viewModel.taskList.name ?? "Unnamed List")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        Image(systemName: viewModel.listSymbol)
+                            .foregroundColor(Color(UIColor.color(data: viewModel.taskList.colorData ?? Data()) ?? .gray))
+                        Text(viewModel.taskList.name ?? "Unnamed List")
+                            .font(.headline)
+                    }
+                }
+            }
             .task {
                 await viewModel.loadContent()
             }
@@ -51,14 +61,6 @@ struct ListDetailView: View {
             }
             .overlay(alignment: .bottomTrailing) {
                 floatingActionButton
-            }
-            .overlay {
-                if isPerformingDrop {
-                    ProgressView()
-                        .scaleEffect(2)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.black.opacity(0.4))
-                }
             }
             .alert(item: $viewModel.error) { identifiableError in
                 Alert(
@@ -144,63 +146,5 @@ struct ListDetailView: View {
     
     private func handleReminderChange() {
         print("Reminders updated in ListDetailView: \(viewModel.reminders.count)")
-    }
-}
-
-struct DropViewDelegate: DropDelegate {
-    let viewModel: ListDetailViewModel
-    let subHeading: SubHeading?
-    @Binding var isPerformingDrop: Bool
-    @Binding var dropFeedback: IdentifiableError?
-    
-    func performDrop(info: DropInfo) -> Bool {
-        guard let itemProvider = info.itemProviders(for: [UTType.hexagonReminder]).first else {
-            return false
-        }
-        
-        isPerformingDrop = true
-        
-        Task {
-            do {
-                let reminder = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Reminder, Error>) in
-                    itemProvider.loadObject(ofClass: NSString.self) { (urlString, error) in
-                        if let error = error {
-                            continuation.resume(throwing: error)
-                            return
-                        }
-                        
-                        guard let urlString = urlString as? String,
-                              let url = URL(string: urlString) else {
-                            continuation.resume(throwing: NSError(domain: "DropViewDelegateError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL string"]))
-                            return
-                        }
-                        
-                        Task { @MainActor in
-                            do {
-                                guard let objectID = PersistenceController.shared.persistentContainer.persistentStoreCoordinator.managedObjectID(forURIRepresentation: url),
-                                      let reminder = try PersistenceController.shared.persistentContainer.viewContext.existingObject(with: objectID) as? Reminder else {
-                                    throw NSError(domain: "DropViewDelegateError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to load Reminder object"])
-                                }
-                                continuation.resume(returning: reminder)
-                            } catch {
-                                continuation.resume(throwing: error)
-                            }
-                        }
-                    }
-                }
-                
-                let success = await viewModel.handleDrop(reminders: [reminder], to: subHeading)
-                if success {
-                    dropFeedback = IdentifiableError(message: "Reminder moved successfully")
-                } else {
-                    dropFeedback = IdentifiableError(message: "Failed to move reminder")
-                }
-            } catch {
-                dropFeedback = IdentifiableError(message: "Error: \(error.localizedDescription)")
-            }
-            isPerformingDrop = false
-        }
-        
-        return true
     }
 }
