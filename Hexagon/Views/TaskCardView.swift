@@ -31,7 +31,7 @@ struct TaskCardView: View {
         .padding(.horizontal, 16)
         .cardStyle()
         .onTapGesture(perform: onTap)
-        .draggable(reminder)
+//        .draggable(reminder)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(reminder.title ?? "Untitled Task")
         .accessibilityHint("Double-tap for more options")
