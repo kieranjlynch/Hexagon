@@ -27,6 +27,7 @@ struct Hexagon: App {
     @State private var selectedTab: String = "Lists"
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = false
     @State private var isCoreDataInitialized = false
+    @State private var showICloudAlert = false
     
     private var logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "AppLifecycle")
     
@@ -60,12 +61,14 @@ struct Hexagon: App {
                         .environmentObject(appSettings)
                         .environmentObject(listService)
                         .onAppear {
-                            print("ReminderService initialized: \(reminderService)")
+                            logger.debug("ReminderService initialized")
                             setupGlobalTint()
                             setupQuickActionObserver()
-                            updateDynamicQuickActions()
+                            checkICloudStatus()
                         }
-                        .task { try? Tips.resetDatastore() }
+                        .task {
+                            try? Tips.resetDatastore()
+                        }
                         .onOpenURL { url in
                             handleQuickAction(url)
                         }
@@ -77,6 +80,18 @@ struct Hexagon: App {
                                     .environmentObject(locationService)
                                     .environmentObject(listService)
                             }
+                        }
+                        .alert(isPresented: $showICloudAlert) {
+                            Alert(
+                                title: Text("iCloud Not Available"),
+                                message: Text("You are not signed into iCloud. Your information is not being saved in the cloud."),
+                                primaryButton: .default(Text("Open Settings")) {
+                                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                        UIApplication.shared.open(settingsUrl)
+                                    }
+                                },
+                                secondaryButton: .cancel(Text("Dismiss"))
+                            )
                         }
                 }
             }
@@ -139,6 +154,14 @@ struct Hexagon: App {
         }
     }
     
+    private func checkICloudStatus() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            if !PersistenceController.shared.isCloudKitAvailable {
+                self.showICloudAlert = true
+            }
+        }
+    }
+    
     @MainActor
     private func handleQuickAction(_ input: Any) {
         if let url = input as? URL {
@@ -158,11 +181,6 @@ struct Hexagon: App {
             quickActionDestination = .addTask
         case "openInbox":
             selectedTab = "Inbox"
-        case "openSavedSearch":
-            if let filterName = components?.queryItems?.first(where: { $0.name == "name" })?.value,
-               let _ = await loadSavedFilter(name: filterName) {
-                selectedTab = "Search"
-            }
         default:
             break
         }
@@ -176,37 +194,7 @@ struct Hexagon: App {
         case "OpenInboxAction":
             selectedTab = "Inbox"
         default:
-            if shortcutItem.type.hasPrefix("SavedSearch_"),
-               let userInfo = shortcutItem.userInfo as? [String: String],
-               let filterName = userInfo["name"] {
-                Task {
-                    if (await loadSavedFilter(name: filterName)) != nil {
-                        selectedTab = "Search"
-                    }
-                }
-            }
-        }
-    }
-
-    @MainActor
-    private func updateDynamicQuickActions() {
-        Task {
-            let savedFilters = await loadSavedFilters()
-            let dynamicActions = savedFilters.prefix(2).map { filter in
-                UIApplicationShortcutItem(
-                    type: "SavedSearch_\(filter.id.uuidString)",
-                    localizedTitle: filter.name,
-                    localizedSubtitle: "Open saved search",
-                    icon: UIApplicationShortcutIcon(systemImageName: "magnifyingglass"),
-                    userInfo: ["name": filter.name as NSSecureCoding]
-                )
-            }
-            
-            let staticActions = UIApplication.shared.shortcutItems?.filter {
-                $0.type == "AddTaskAction" || $0.type == "OpenInboxAction"
-            } ?? []
-            
-            UIApplication.shared.shortcutItems = staticActions + dynamicActions
+            break
         }
     }
     
@@ -217,26 +205,9 @@ struct Hexagon: App {
         do {
             let count = try context.count(for: request)
             print("Number of TaskList objects: \(count)")
-            
         } catch {
             print("Error checking TaskLists: \(error)")
         }
-    }
-    
-    private func loadSavedFilters() async -> [SavedFilter] {
-        if let data = UserDefaults.standard.data(forKey: "SavedFilters") {
-            do {
-                return try JSONDecoder().decode([SavedFilter].self, from: data)
-            } catch {
-                return []
-            }
-        }
-        return []
-    }
-    
-    private func loadSavedFilter(name: String) async -> SavedFilter? {
-        let savedFilters = await loadSavedFilters()
-        return savedFilters.first { $0.name == name }
     }
 }
 

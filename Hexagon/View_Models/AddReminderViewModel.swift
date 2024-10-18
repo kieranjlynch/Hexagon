@@ -21,7 +21,7 @@ public class AddReminderViewModel: ObservableObject {
     @Published public var priority: Int = 0
     @Published public var url: String = ""
     @Published public var selectedNotifications: Set<String> = []
-    @Published public var selectedTags: Set<Tag> = []
+    @Published public var selectedTags: Set<ReminderTag> = []
     @Published public var notes: String = ""
     @Published public var selectedPhotos: [UIImage] = []
     @Published public var selectedLocation: Location?
@@ -40,10 +40,12 @@ public class AddReminderViewModel: ObservableObject {
     
     private var logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "AddReminderViewModel")
     
-    public init(reminder: Reminder? = nil) {
+    public init(reminder: Reminder? = nil, defaultList: TaskList? = nil) {
         self.reminder = reminder
         if let reminder = reminder {
             loadReminder(reminder)
+        } else if let defaultList = defaultList {
+            selectedList = defaultList
         }
     }
     
@@ -51,7 +53,7 @@ public class AddReminderViewModel: ObservableObject {
         title = reminder.title ?? ""
         startDate = reminder.startDate ?? Date()
         endDate = reminder.endDate ?? Date()
-        selectedTags = reminder.tags as? Set<Tag> ?? []
+        selectedTags = reminder.tags as? Set<ReminderTag> ?? []
         selectedList = reminder.list
         notes = reminder.notes ?? ""
         url = reminder.url ?? ""
@@ -70,8 +72,10 @@ public class AddReminderViewModel: ObservableObject {
         self.selectedPhotos = newPhotos
     }
     
+    // MARK: - Async/Await for saving the reminder
+
     public func saveReminder() async throws -> (Reminder, [String], [UIImage]) {
-        guard let reminderService = reminderService else {
+        guard let reminderService = reminderService, let _ = listService else {
             throw ReminderError.missingServices
         }
         
@@ -81,6 +85,13 @@ public class AddReminderViewModel: ObservableObject {
         
         logger.debug("Saving reminder with priority: \(self.priority)")
         
+        let targetList: TaskList
+        if let selectedList = selectedList {
+            targetList = selectedList
+        } else {
+            targetList = try await fetchInboxList()
+        }
+        
         let savedReminder = try await reminderService.saveReminder(
             reminder: reminder,
             title: title,
@@ -89,7 +100,7 @@ public class AddReminderViewModel: ObservableObject {
             notes: notes,
             url: ensureValidURL(url),
             priority: Int16(priority),
-            list: selectedList,
+            list: targetList,
             subHeading: nil,
             tags: selectedTags,
             photos: selectedPhotos,
@@ -101,40 +112,23 @@ public class AddReminderViewModel: ObservableObject {
         
         self.reminder = savedReminder
         logger.debug("Saved reminder with priority: \(savedReminder.priority)")
+        
         return (savedReminder, selectedTags.compactMap { $0.name }, selectedPhotos)
     }
     
-    public func fetchSavedReminder() async throws -> Reminder? {
-        guard let reminderService = reminderService else {
+    private func fetchInboxList() async throws -> TaskList {
+        guard let listService = listService else {
             throw ReminderError.missingServices
         }
-        let reminders = try await reminderService.fetchReminders(
-            withPredicate: "title == %@",
-            predicateArguments: [title]
-        )
-        return reminders.first
+        return try await listService.fetchInboxList()
     }
     
+    // MARK: - Helper Methods for Validation and URL Formatting
+
     private func validateReminderData() throws {
         if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw ReminderError.emptyTitle
         }
-    }
-    
-    public enum ReminderError: Error {
-        case emptyTitle
-        case saveFailed(Error)
-        case missingServices
-    }
-    
-    public func addNewTag() async throws {
-        guard !newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard reminderService != nil else {
-            throw ReminderError.missingServices
-        }
-        let newTag = try await tagService.createTag(name: newTagName)
-        selectedTags.insert(newTag)
-        newTagName = ""
     }
     
     public func ensureValidURL(_ urlString: String) -> String {
@@ -157,6 +151,8 @@ public class AddReminderViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Location Services and Tag Management
+
     public func searchLocations(query: String) async throws -> [SearchResult] {
         return try await locationService.search(with: query, coordinate: locationService.currentLocation)
     }
@@ -168,4 +164,23 @@ public class AddReminderViewModel: ObservableObject {
     public func requestLocationPermission() {
         locationService.requestWhenInUseAuthorization()
     }
+    
+    public func addNewTag() async throws {
+        guard !newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard reminderService != nil else {
+            throw ReminderError.missingServices
+        }
+        let newTag = try await tagService.createTag(name: newTagName)
+        selectedTags.insert(newTag)
+        newTagName = ""
+    }
+    
+    // MARK: - Error Handling
+
+    public enum ReminderError: Error {
+        case emptyTitle
+        case saveFailed(Error)
+        case missingServices
+    }
 }
+

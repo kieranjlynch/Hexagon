@@ -19,8 +19,8 @@ struct VoiceNoteSheetView: View {
     @State private var recordingURL: URL?
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
-    @State private var waveformSamples: [CGFloat] = Array(repeating: 0, count: 50)
-    
+    @State private var power: CGFloat = 0
+
     var body: some View {
         VStack {
             Text(timeString(from: recordingDuration))
@@ -30,7 +30,7 @@ struct VoiceNoteSheetView: View {
             Spacer()
             
             if isRecording || voiceNoteData != nil {
-                WaveformView(samples: waveformSamples)
+                WaveView(power: $power)
                     .frame(height: 100)
                     .padding()
             }
@@ -108,7 +108,7 @@ struct VoiceNoteSheetView: View {
             
             timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 recordingDuration += 0.1
-                updateWaveform()
+                updatePower()
             }
         } catch {
             return
@@ -134,18 +134,19 @@ struct VoiceNoteSheetView: View {
         
         do {
             audioPlayer = try AVAudioPlayer(data: data)
+            audioPlayer?.isMeteringEnabled = true
             audioPlayer?.play()
             isPlaying = true
             
             timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
                 recordingDuration = audioPlayer?.currentTime ?? 0
-                updateWaveform()
+                updatePower()
             }
         } catch {
             return
         }
     }
-    
+
     private func stopPlayback() {
         audioPlayer?.stop()
         isPlaying = false
@@ -156,62 +157,33 @@ struct VoiceNoteSheetView: View {
         voiceNoteData = nil
         stopPlayback()
         recordingDuration = 0
-        waveformSamples = Array(repeating: 0, count: 50)
     }
     
-    private func updateWaveform() {
+    private func updatePower() {
         if isRecording {
             audioRecorder?.updateMeters()
-            let normalizedValue = (CGFloat(audioRecorder?.averagePower(forChannel: 0) ?? -160) + 160) / 160
-            waveformSamples.append(normalizedValue)
-            if waveformSamples.count > 50 {
-                waveformSamples.removeFirst()
-            }
+            let decibels = audioRecorder?.averagePower(forChannel: 0) ?? -160
+            power = normalizedPowerLevel(fromDecibels: decibels)
         } else if isPlaying {
             audioPlayer?.updateMeters()
-            let normalizedValue = (CGFloat(audioPlayer?.averagePower(forChannel: 0) ?? -160) + 160) / 160
-            waveformSamples.append(normalizedValue)
-            if waveformSamples.count > 50 {
-                waveformSamples.removeFirst()
-            }
+            let decibels = audioPlayer?.averagePower(forChannel: 0) ?? -160
+            power = normalizedPowerLevel(fromDecibels: decibels)
         }
     }
     
+    private func normalizedPowerLevel(fromDecibels decibels: Float) -> CGFloat {
+        let minDb: Float = -80.0
+        let maxDb: Float = -10.0
+        let clampedDecibels = max(decibels, minDb)
+        let normalized = CGFloat((clampedDecibels - minDb) / (maxDb - minDb))
+        let level = pow(normalized, 2.0)
+        let threshold: CGFloat = 0.05
+        return level < threshold ? 0.0 : level
+    }
+
     private func timeString(from timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
         return String(format: "%02d:%02d", minutes, seconds)
-    }
-}
-
-struct WaveformView: View {
-    let samples: [CGFloat]
-    
-    var body: some View {
-        GeometryReader { geometry in
-            Path { path in
-                let width = geometry.size.width / CGFloat(samples.count)
-                let midY = geometry.size.height / 2
-                let scale = geometry.size.height / 2
-                
-                for (index, sample) in samples.enumerated() {
-                    let x = CGFloat(index) * width
-                    let y = midY - (sample * scale)
-                    
-                    if index == 0 {
-                        path.move(to: CGPoint(x: x, y: y))
-                    } else {
-                        path.addLine(to: CGPoint(x: x, y: y))
-                    }
-                }
-                
-                for (index, sample) in samples.enumerated().reversed() {
-                    let x = CGFloat(index) * width
-                    let y = midY + (sample * scale)
-                    path.addLine(to: CGPoint(x: x, y: y))
-                }
-            }
-            .fill(LinearGradient(gradient: Gradient(colors: [Color.blue, Color.purple]), startPoint: .top, endPoint: .bottom))
-        }
     }
 }

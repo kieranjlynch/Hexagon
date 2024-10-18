@@ -1,14 +1,13 @@
 //
 //  Reminder+CoreDataProperties.swift
-//  HexagonData
+//  Hexagon
 //
-//  Created by Kieran Lynch on 06/10/2024.
+//  Created by Kieran Lynch on 14/10/2024.
 //
 //
 
 import Foundation
 import CoreData
-
 
 extension Reminder {
 
@@ -23,7 +22,7 @@ extension Reminder {
     @NSManaged public var notifications: String?
     @NSManaged public var order: Int16
     @NSManaged public var priority: Int16
-    @NSManaged public var radius: Double
+    @NSManaged public var radius: NSNumber?
     @NSManaged public var reminderID: UUID?
     @NSManaged public var reminderTime: Date?
     @NSManaged public var startDate: Date?
@@ -60,10 +59,10 @@ extension Reminder {
 extension Reminder {
 
     @objc(addTagsObject:)
-    @NSManaged public func addToTags(_ value: Tag)
+    @NSManaged public func addToTags(_ value: ReminderTag)
 
     @objc(removeTagsObject:)
-    @NSManaged public func removeFromTags(_ value: Tag)
+    @NSManaged public func removeFromTags(_ value: ReminderTag)
 
     @objc(addTags:)
     @NSManaged public func addToTags(_ values: NSSet)

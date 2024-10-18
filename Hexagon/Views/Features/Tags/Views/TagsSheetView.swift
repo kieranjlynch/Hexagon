@@ -13,8 +13,8 @@ import HexagonData
 struct TagsSheetView: View {
     @Environment(\.appTintColor) var appTintColor
     @Environment(\.colorScheme) var colorScheme
-    @State private var tags: [Tag] = []
-    @Binding var selectedTags: Set<Tag>
+    @State private var tags: [ReminderTag] = []
+    @Binding var selectedTags: Set<ReminderTag>
     @State private var isShowingNewTagAlert = false
     @State private var newTagName = ""
     @EnvironmentObject private var reminderService: ReminderService
@@ -24,7 +24,7 @@ struct TagsSheetView: View {
     
     private let tagService: TagService
     
-    init(selectedTags: Binding<Set<Tag>>) {
+    init(selectedTags: Binding<Set<ReminderTag>>) {
         self._selectedTags = selectedTags
         self.tagService = TagService()
     }
@@ -57,7 +57,7 @@ struct TagsSheetView: View {
         .errorAlert(errorMessage: $errorMessage)
     }
     
-    private func toggleTag(_ tag: Tag) {
+    private func toggleTag(_ tag: ReminderTag) {
         if selectedTags.contains(tag) {
             selectedTags.remove(tag)
         } else {

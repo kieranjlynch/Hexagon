@@ -54,7 +54,7 @@ struct LinkSheetView: View {
                     ZStack {
                         WebView(url: formattedURL, isLoading: $isLoading, errorMessage: $webViewError)
                             .frame(maxHeight: 400)
-                            .cornerRadius(8)
+                            .cornerRadius(4)
                             .padding(.horizontal)
                         if isLoading {
                             ProgressView("Loading...")

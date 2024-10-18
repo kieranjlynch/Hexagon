@@ -15,7 +15,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         sceneConfig.delegateClass = SceneDelegate.self
         return sceneConfig
     }
-
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         printWidgetConfigurations()
         return true
@@ -41,15 +41,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 class SceneDelegate: NSObject, UIWindowSceneDelegate {
     var window: UIWindow?
-
+    
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         DateFormatter.updateSharedDateFormatter()
     }
-
+    
     func sceneDidBecomeActive(_ scene: UIScene) {
         DateFormatter.updateSharedDateFormatter()
     }
-
+    
     func windowScene(_ windowScene: UIWindowScene, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
         NotificationCenter.default.post(name: .handleQuickAction, object: shortcutItem)
         completionHandler(true)

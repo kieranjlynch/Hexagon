@@ -17,7 +17,7 @@ struct NotificationSheetView: View {
     @State private var selectedLocation: Location?
     @State private var locations: [Location] = []
     @State private var isShowingMap = false
-
+    
     let reminderTimes = [
         "15 minutes before",
         "30 minutes before",
@@ -99,7 +99,7 @@ struct NotificationSheetView: View {
             selectedNotifications.insert(time)
         }
     }
-
+    
     private func fetchLocations() async {
         do {
             locations = try await locationService.fetchLocations()
@@ -107,7 +107,7 @@ struct NotificationSheetView: View {
             print("Error fetching locations: \(error)")
         }
     }
-
+    
     private func saveLocation(name: String, latitude: Double, longitude: Double) async {
         do {
             let newLocation = try await locationService.saveLocation(name: name, latitude: latitude, longitude: longitude)

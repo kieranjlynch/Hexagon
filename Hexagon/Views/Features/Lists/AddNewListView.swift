@@ -17,7 +17,7 @@ struct AddNewListView: View {
     @State private var selectedColor: Color
     @State private var selectedSymbol: String
     @State private var searchText: String = ""
-    @State private var showSymbolPicker: Bool = false
+    @State private var errorMessage: String?
     
     private var taskList: TaskList?
     
@@ -42,42 +42,36 @@ struct AddNewListView: View {
                         .frame(maxWidth: 200)
                 }
                 .padding()
-                
-                if showSymbolPicker {
-                    VStack(spacing: 16) {
-                        SearchBar(searchText: $searchText, colorScheme: colorScheme)
-                        SymbolPickerView(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, searchText: $searchText)
-                            .transition(.move(edge: .leading))
-                    }
-                    .animation(.easeInOut, value: showSymbolPicker)
-                } else {
-                    Button(action: {
-                        withAnimation {
-                            showSymbolPicker.toggle()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: selectedSymbol)
-                                .foregroundColor(selectedColor)
-                            Text("Choose Symbol")
-                                .foregroundColor(.blue)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color(UIColor.systemGray6))
-                        .cornerRadius(8)
-                    }
-                    .padding([.horizontal, .vertical])
+
+                VStack(spacing: 16) {
+                    SearchBar(text: $searchText, placeholder: "Search icons")
+                    SymbolPickerView(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, searchText: $searchText)
+                    
                 }
                 
                 Spacer()
                 
-                ButtonRow(isFormValid: isFormValid, saveAction: saveList, dismissAction: { dismiss() }, colorScheme: colorScheme)
+                ButtonRowView(
+                    isFormValid: isFormValid,
+                    saveAction: { await saveList() },
+                    dismissAction: { dismiss() },
+                    colorScheme: colorScheme
+                )
             }
             .padding(.horizontal)
             .navigationTitle(taskList == nil ? "Add List" : "Edit List")
             .navigationBarTitleDisplayMode(.inline)
             .background(backgroundView)
+            .alert(isPresented: Binding<Bool>(
+                get: { errorMessage != nil },
+                set: { _ in errorMessage = nil }
+            )) {
+                Alert(
+                    title: Text("Error"),
+                    message: Text(errorMessage ?? "An unknown error occurred."),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
     }
     
@@ -95,65 +89,30 @@ struct AddNewListView: View {
             }
             dismiss()
         } catch {
-            return
-        }
-    }
-    
-    struct ListHeader: View {
-        @Binding var selectedSymbol: String
-        @Binding var selectedColor: Color
-        @Binding var name: String
-        var colorScheme: ColorScheme
-        
-        var body: some View {
-            HStack {
-                Image(systemName: selectedSymbol)
-                    .foregroundColor(selectedColor)
-                    .font(.system(size: 30))
-                    .frame(width: 40, height: 40)
-                TextField("List Name", text: $name)
-                    .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
-                    .textFieldStyle(.roundedBorder)
+            if let listError = error as? ListService.ListServiceError {
+                errorMessage = listError.localizedDescription
+            } else {
+                errorMessage = error.localizedDescription
             }
         }
     }
+}
+
+struct ListHeader: View {
+    @Binding var selectedSymbol: String
+    @Binding var selectedColor: Color
+    @Binding var name: String
+    var colorScheme: ColorScheme
     
-    struct SearchBar: View {
-        @Binding var searchText: String
-        var colorScheme: ColorScheme
-        
-        var body: some View {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                TextField("Search icons", text: $searchText)
-                    .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
-            }
-            .padding(8)
-            .background(Color(UIColor.systemGray6))
-            .cornerRadius(8)
-            .padding(.bottom, 8)
-        }
-    }
-    
-    struct ButtonRow: View {
-        let isFormValid: Bool
-        let saveAction: () async -> Void
-        let dismissAction: () -> Void
-        var colorScheme: ColorScheme
-        
-        var body: some View {
-            HStack {
-                CustomButton(title: "Cancel", action: dismissAction, style: .secondary)
-                
-                CustomButton(title: "Save", action: {
-                    Task {
-                        await saveAction()
-                    }
-                }, style: .primary)
-                .disabled(!isFormValid)
-            }
-            .padding()
-            .background(colorScheme == .dark ? Color.black : Color.white)
+    var body: some View {
+        HStack {
+            Image(systemName: selectedSymbol)
+                .foregroundColor(selectedColor)
+                .font(.system(size: 30))
+                .frame(width: 40, height: 40)
+            TextField("List Name", text: $name)
+                .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
+                .textFieldStyle(.roundedBorder)
         }
     }
 }

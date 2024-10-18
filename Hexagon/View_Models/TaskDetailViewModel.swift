@@ -8,7 +8,9 @@
 import SwiftUI
 import AVFoundation
 import HexagonData
+import Combine
 
+@MainActor
 class TaskDetailViewModel: ObservableObject {
     @Published var reminder: Reminder
     @Published var tags: [String] = []
@@ -18,6 +20,7 @@ class TaskDetailViewModel: ObservableObject {
     
     private var audioPlayer: AVAudioPlayer?
     private let reminderService: ReminderService
+    private var cancellables = Set<AnyCancellable>()
     
     init(reminder: Reminder, reminderService: ReminderService) {
         self.reminder = reminder
@@ -25,16 +28,29 @@ class TaskDetailViewModel: ObservableObject {
         loadReminderDetails()
     }
     
+    // MARK: - Combine Streams
+    
+    private func setupCombineSubscriptions() {
+        $reminder
+            .sink { [weak self] _ in
+                self?.loadReminderDetails()
+            }
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Async/Await functions
+
     func loadReminderDetails() {
-        fetchPhotos()
-        fetchTags()
-        fetchNotifications()
+        Task {
+            await fetchPhotos()
+            await fetchTags()
+            await fetchNotifications()
+        }
     }
 
     @MainActor
     func updateTags(_ newTags: [String]) {
         self.tags = newTags
-        objectWillChange.send()
     }
 
     @MainActor
@@ -45,10 +61,22 @@ class TaskDetailViewModel: ObservableObject {
             reminderPhoto.photoData = photoData
             return reminderPhoto
         }
-        objectWillChange.send()
+    }
+
+    @MainActor
+    func reloadReminder() async {
+        do {
+            let updatedReminder = try reminderService.getReminder(withID: reminder.objectID)
+            self.reminder = updatedReminder
+            loadReminderDetails()
+        } catch {
+            print("Error reloading reminder: \(error.localizedDescription)")
+        }
     }
     
-    private func fetchPhotos() {
+    // MARK: - Async Fetch Operations
+
+    private func fetchPhotos() async {
         if let photosSet = reminder.photos as? Set<ReminderPhoto> {
             photos = Array(photosSet)
         } else {
@@ -56,27 +84,15 @@ class TaskDetailViewModel: ObservableObject {
         }
     }
 
-    @MainActor
-    func reloadReminder() {
-        do {
-            let updatedReminder = try reminderService.getReminder(withID: reminder.objectID)
-            self.reminder = updatedReminder
-            loadReminderDetails()
-            objectWillChange.send()
-        } catch {
-            print("Error reloading reminder: \(error.localizedDescription)")
-        }
-    }
-
-    private func fetchTags() {
-        if let tagsSet = reminder.tags as? Set<Tag> {
+    private func fetchTags() async {
+        if let tagsSet = reminder.tags as? Set<ReminderTag> {
             tags = tagsSet.compactMap { $0.name }
         } else {
             tags = []
         }
     }
 
-    private func fetchNotifications() {
+    private func fetchNotifications() async {
         if let notificationsString = reminder.notifications {
             notifications = notificationsString.components(separatedBy: ",").filter { !$0.isEmpty }
         } else {
@@ -84,6 +100,8 @@ class TaskDetailViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Playback Management
+
     func togglePlayback() {
         if isPlaying {
             stopPlayback()
@@ -107,6 +125,8 @@ class TaskDetailViewModel: ObservableObject {
         audioPlayer?.stop()
         isPlaying = false
     }
+    
+    // MARK: - Utility Properties
     
     var hasDates: Bool {
         reminder.startDate != nil || reminder.endDate != nil

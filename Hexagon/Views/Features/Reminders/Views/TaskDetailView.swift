@@ -13,12 +13,12 @@ import HexagonData
 struct FlowLayout: Layout {
     var alignment: Alignment = .center
     var spacing: CGFloat = 8
-
+    
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = FlowResult(in: proposal.replacingUnspecifiedDimensions().width, subviews: subviews, alignment: alignment, spacing: spacing)
         return result.size
     }
-
+    
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let result = FlowResult(in: bounds.width, subviews: subviews, alignment: alignment, spacing: spacing)
         for (index, subview) in subviews.enumerated() {
@@ -26,37 +26,37 @@ struct FlowLayout: Layout {
             subview.place(at: CGPoint(x: point.x + bounds.minX, y: point.y + bounds.minY), proposal: .unspecified)
         }
     }
-
+    
     struct FlowResult {
         let frames: [CGRect]
         let size: CGSize
-
+        
         init(in maxWidth: CGFloat, subviews: Subviews, alignment: Alignment, spacing: CGFloat) {
             var frames = [CGRect]()
             var lineOrigin = CGPoint.zero
             var lineSize = CGSize.zero
             var totalSize = CGSize.zero
-
+            
             for subview in subviews {
                 let subviewSize = subview.sizeThatFits(.unspecified)
-
+                
                 if lineOrigin.x + subviewSize.width > maxWidth {
                     lineOrigin.x = 0
                     lineOrigin.y += lineSize.height + spacing
                     lineSize.height = 0
                 }
-
+                
                 let frame = CGRect(origin: lineOrigin, size: subviewSize)
                 frames.append(frame)
-
+                
                 lineOrigin.x += subviewSize.width + spacing
                 lineSize.height = max(lineSize.height, subviewSize.height)
                 lineSize.width = max(lineSize.width, lineOrigin.x)
-
+                
                 totalSize.width = max(totalSize.width, lineSize.width)
                 totalSize.height = max(totalSize.height, lineOrigin.y + lineSize.height)
             }
-
+            
             self.frames = frames
             self.size = totalSize
         }
@@ -205,7 +205,7 @@ struct TaskDetailView: View {
             }
         }
     }
-
+    
     private var subHeadingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
@@ -314,7 +314,7 @@ struct TaskDetailView: View {
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 100, height: 100)
-                                .cornerRadius(10)
+                                .cornerRadius(4)
                                 .onTapGesture {
                                     selectedPhoto = photo
                                 }
@@ -336,7 +336,7 @@ struct TaskDetailView: View {
             if let location = viewModel.reminder.location {
                 Text(location.name ?? "Unknown")
                 Text("Latitude: \(location.latitude), Longitude: \(location.longitude)")
-                Text("Radius: \(viewModel.reminder.radius) meters")
+                Text("Radius: \(viewModel.reminder.radius ?? 0) meters")
             }
         }
     }

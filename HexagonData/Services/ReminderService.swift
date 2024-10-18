@@ -14,7 +14,6 @@ import CoreLocation
 
 @MainActor
 public class ReminderService: ObservableObject {
-    // MARK: - Properties
     public static let shared = ReminderService(
         persistenceController: PersistenceController.shared,
         listService: ListService.shared,
@@ -22,7 +21,7 @@ public class ReminderService: ObservableObject {
         calendarService: CalendarService.shared,
         photoService: PhotoService.shared,
         locationService: LocationService(),
-        subheadingService: SubheadingService(context: PersistenceController.shared.persistentContainer.viewContext)
+        subheadingService: SubheadingService(persistenceController: PersistenceController.shared)
     )
     
     public let persistentContainer: NSPersistentContainer
@@ -37,7 +36,6 @@ public class ReminderService: ObservableObject {
     private let locationService: LocationService
     private let subheadingService: SubheadingService
     
-    // MARK: - Initialization
     public init(
         persistenceController: PersistenceController,
         listService: ListService,
@@ -66,7 +64,6 @@ public class ReminderService: ObservableObject {
         }
     }
     
-    // MARK: - Create
     public func saveReminder(
         reminder: Reminder? = nil,
         title: String,
@@ -77,7 +74,7 @@ public class ReminderService: ObservableObject {
         priority: Int16,
         list: TaskList?,
         subHeading: SubHeading?,
-        tags: Set<Tag>,
+        tags: Set<ReminderTag>,
         photos: [UIImage],
         notifications: Set<String>,
         location: CLLocationCoordinate2D?,
@@ -86,10 +83,14 @@ public class ReminderService: ObservableObject {
     ) async throws -> Reminder {
         logger.info("Saving reminder: title=\(title), list=\(list?.name ?? "No List")")
         
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
+        
         let savedReminder = try await withCheckedThrowingContinuation { continuation in
-            persistentContainer.viewContext.perform {
+            context.perform {
                 do {
-                    let reminderToSave = self.getOrCreateReminder(reminder: reminder, context: self.persistentContainer.viewContext)
+                    let reminderToSave = self.getOrCreateReminder(reminder: reminder, context: context)
                     
                     if reminderToSave.reminderID == nil {
                         reminderToSave.reminderID = UUID()
@@ -109,16 +110,18 @@ public class ReminderService: ObservableObject {
                         notifications: notifications
                     )
                     
-                    self.handleReminderPhotos(reminderToSave: reminderToSave, photos: photos)
-                    self.handleReminderLocation(reminderToSave: reminderToSave, location: location, radius: radius)
-                    self.setReminderVoiceNote(reminderToSave: reminderToSave, voiceNoteData: voiceNoteData)
+                    self.handleReminderPhotos(reminderToSave: reminderToSave, photos: photos, context: context)
+                    self.handleReminderLocation(reminderToSave: reminderToSave, location: location, radius: radius, context: context)
+                    self.setReminderVoiceNote(reminderToSave: reminderToSave, voiceNoteData: voiceNoteData, context: context)
                     
-                    try self.persistentContainer.viewContext.save()
+                    try context.save()
                     
                     self.logger.info("Saved reminder: id=\(reminderToSave.reminderID?.uuidString ?? "unknown"), title=\(reminderToSave.title ?? ""), isInInbox=\(reminderToSave.isInInbox), list=\(reminderToSave.list?.name ?? "No List"), isCompleted=\(reminderToSave.isCompleted)")
                     
                     continuation.resume(returning: reminderToSave)
                 } catch {
+                    self.logger.error("Failed to save reminder: \(error.localizedDescription)")
+                    context.rollback()
                     continuation.resume(throwing: error)
                 }
             }
@@ -126,31 +129,37 @@ public class ReminderService: ObservableObject {
         
         await postSaveOperations(for: savedReminder)
         
-        if let endDate = endDate {
-            try await calendarService.saveTaskToCalendar(title: savedReminder.title ?? "", startDate: savedReminder.startDate ?? Date(), duration: endDate.timeIntervalSince(savedReminder.startDate ?? Date()) / 60)
-        }
-        
         return savedReminder
     }
     
-    // MARK: - Read
     public func fetchReminders(
         withPredicate predicateFormat: String? = nil,
         predicateArguments: [Any] = [],
+        excludeCompleted: Bool = false,
         sortKey: String? = nil,
         ascending: Bool = true
     ) async throws -> [Reminder] {
         return try await persistentContainer.viewContext.perform {
             let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
             
+            var predicates = [NSPredicate]()
+            
             if let predicateFormat = predicateFormat {
-                request.predicate = NSPredicate(format: predicateFormat, argumentArray: predicateArguments)
+                predicates.append(NSPredicate(format: predicateFormat, argumentArray: predicateArguments))
+            }
+            
+            if excludeCompleted {
+                predicates.append(NSPredicate(format: "isCompleted == NO"))
+            }
+            
+            if !predicates.isEmpty {
+                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
             }
             
             request.sortDescriptors = [NSSortDescriptor(key: sortKey ?? "startDate", ascending: ascending)]
             
             let fetchedReminders = try self.persistentContainer.viewContext.fetch(request)
-            self.logger.info("Fetched \(fetchedReminders.count) reminders with predicate: \(predicateFormat ?? "None")")
+            self.logger.info("Fetched \(fetchedReminders.count) reminders with predicates.")
             return fetchedReminders
         }
     }
@@ -163,25 +172,28 @@ public class ReminderService: ObservableObject {
         return reminder
     }
     
-    public func fetchUnassignedAndIncompleteReminders() async throws -> [Reminder] {
-        return try await fetchReminders(
-            withPredicate: "(isInInbox == YES OR list == nil) AND (isCompleted == NO OR isCompleted == nil)"
-        )
-    }
-    
     public func getRemindersForList(_ list: TaskList) async throws -> [Reminder] {
-        return try await fetchReminders(
+        logger.info("Fetching reminders for list: \(list.name ?? "Unknown"), listID: \(list.listID?.uuidString ?? "nil")")
+        let reminders = try await fetchReminders(
             withPredicate: "list == %@",
             predicateArguments: [list]
         )
+        logger.info("Fetched \(reminders.count) reminders for list")
+        for reminder in reminders {
+            logger.debug("Reminder: id=\(reminder.reminderID?.uuidString ?? "nil"), title=\(reminder.title ?? "nil"), isCompleted=\(reminder.isCompleted)")
+        }
+        return reminders
     }
     
-    // MARK: - Update
     public func updateReminderCompletionStatus(reminder: Reminder, isCompleted: Bool) async throws {
         logger.info("Updating completion status: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? ""), isCompleted=\(isCompleted)")
-        let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
+        
         try await context.perform {
-            reminder.isCompleted = isCompleted
+            let reminderInContext = context.object(with: reminder.objectID) as! Reminder
+            reminderInContext.isCompleted = isCompleted
             try context.save()
         }
         
@@ -189,8 +201,12 @@ public class ReminderService: ObservableObject {
     }
     
     public func updateReminder(_ reminder: Reminder) async throws {
-        let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
+        
         try await context.perform {
+            _ = context.object(with: reminder.objectID) as! Reminder
             try context.save()
         }
         await refreshReminders()
@@ -201,25 +217,29 @@ public class ReminderService: ObservableObject {
         await refreshReminders()
     }
     
-    // MARK: - Delete
     public func deleteReminder(_ reminder: Reminder) async throws {
         logger.info("Deleting reminder: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? "")")
-        let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
+        
         try await context.perform {
-            context.delete(reminder)
+            let reminderInContext = context.object(with: reminder.objectID) as! Reminder
+            context.delete(reminderInContext)
             try context.save()
         }
-        
         await refreshReminders()
     }
     
-    // MARK: - Sort
     public func reorderReminders(_ reminders: [Reminder]) async throws {
-        let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
         
         try await context.perform {
             for (index, reminder) in reminders.enumerated() {
-                reminder.order = Int16(index)
+                let reminderInContext = context.object(with: reminder.objectID) as! Reminder
+                reminderInContext.order = Int16(index)
             }
             try context.save()
         }
@@ -227,14 +247,13 @@ public class ReminderService: ObservableObject {
         await refreshReminders()
     }
     
-    // MARK: - Helper Methods
     private func setReminders(_ reminders: [Reminder]) {
         self.reminders = reminders
     }
     
     private func getOrCreateReminder(reminder: Reminder?, context: NSManagedObjectContext) -> Reminder {
         if let existingReminder = reminder {
-            return existingReminder
+            return context.object(with: existingReminder.objectID) as! Reminder
         } else {
             let newReminder = Reminder(context: context)
             newReminder.reminderID = UUID()
@@ -252,81 +271,112 @@ public class ReminderService: ObservableObject {
         priority: Int16,
         list: TaskList?,
         subHeading: SubHeading?,
-        tags: Set<Tag>,
+        tags: Set<ReminderTag>,
         notifications: Set<String>
     ) {
+        let context = reminderToSave.managedObjectContext!
+
         reminderToSave.title = title
         reminderToSave.notes = notes
         reminderToSave.url = url
         reminderToSave.priority = priority
-        reminderToSave.list = list
-        reminderToSave.subHeading = subHeading
-        reminderToSave.tags = tags as NSSet
+
+        if let list = list {
+            let listInContext = context.object(with: list.objectID) as! TaskList
+            reminderToSave.list = listInContext
+        } else {
+            reminderToSave.list = nil
+        }
+
+        if let subHeading = subHeading {
+            let subHeadingInContext = context.object(with: subHeading.objectID) as? SubHeading
+            reminderToSave.subHeading = subHeadingInContext
+        } else {
+            reminderToSave.subHeading = nil
+        }
+
+        let tagsInContext = tags.compactMap { tag -> ReminderTag? in
+            return context.object(with: tag.objectID) as? ReminderTag
+        }
+        reminderToSave.tags = NSSet(array: tagsInContext)
+
         reminderToSave.notifications = notifications.joined(separator: ",")
-        
+
         let calendar = Calendar.current
         reminderToSave.startDate = calendar.date(from: calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: startDate))
-        
+
         if let endDate = endDate {
             reminderToSave.endDate = calendar.date(from: calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: endDate))
         } else {
             reminderToSave.endDate = nil
         }
-        
+
         reminderToSave.isInInbox = (list == nil)
     }
+
     
-    private func handleReminderPhotos(reminderToSave: Reminder, photos: [UIImage]) {
+    private func handleReminderPhotos(reminderToSave: Reminder, photos: [UIImage], context: NSManagedObjectContext) {
+        if let existingPhotos = reminderToSave.photos as? Set<ReminderPhoto> {
+            for photo in existingPhotos {
+                context.delete(photo)
+            }
+            reminderToSave.photos = nil
+        }
+        
         let reminderPhotos = photos.map { photo -> ReminderPhoto in
-            let reminderPhoto = ReminderPhoto(context: self.persistentContainer.viewContext)
+            let reminderPhoto = ReminderPhoto(context: context)
             reminderPhoto.photoData = photo.pngData()
             return reminderPhoto
         }
         reminderToSave.photos = NSSet(array: reminderPhotos)
     }
     
-    private func handleReminderLocation(reminderToSave: Reminder, location: CLLocationCoordinate2D?, radius: Double?) {
+    private func handleReminderLocation(reminderToSave: Reminder, location: CLLocationCoordinate2D?, radius: Double?, context: NSManagedObjectContext) {
         if let location = location, let radius = radius {
-            let locationEntity = Location(context: self.persistentContainer.viewContext)
+            let locationEntity = Location(context: context)
             locationEntity.latitude = location.latitude
             locationEntity.longitude = location.longitude
             locationEntity.name = "Reminder Location"
             reminderToSave.location = locationEntity
-            reminderToSave.radius = radius
+            reminderToSave.radius = NSNumber(value: radius)
+        } else {
+            reminderToSave.location = nil
+            reminderToSave.radius = nil
         }
     }
-    
-    private func setReminderVoiceNote(
-        reminderToSave: Reminder,
-        voiceNoteData: Data?
-    ) {
-        let context = persistentContainer.viewContext
-        if let voiceNoteData = voiceNoteData {
-            let voiceNote = reminderToSave.voiceNote ?? VoiceNote(context: context)
-            voiceNote.audioData = voiceNoteData
-            reminderToSave.voiceNote = voiceNote
-        } else if reminderToSave.voiceNote != nil {
-            context.delete(reminderToSave.voiceNote!)
-            reminderToSave.voiceNote = nil
-        }
-    }
-    
+
     private func postSaveOperations(for savedReminder: Reminder) async {
         NotificationCenter.default.post(name: .reminderAdded, object: nil)
         locationService.startMonitoringLocation(for: savedReminder)
         await refreshReminders()
     }
     
-    private func refreshReminders() async {
-        do {
-            let updatedReminders = try await fetchReminders()
-            setReminders(updatedReminders)
-        } catch {
-            logger.error("Failed to refresh reminders: \(error.localizedDescription)")
+    private func setReminderVoiceNote(
+        reminderToSave: Reminder,
+        voiceNoteData: Data?,
+        context: NSManagedObjectContext
+    ) {
+        if let voiceNoteData = voiceNoteData {
+            let voiceNote = reminderToSave.voiceNote ?? VoiceNote(context: context)
+            voiceNote.audioData = voiceNoteData
+            reminderToSave.voiceNote = voiceNote
+        } else if let voiceNote = reminderToSave.voiceNote {
+            context.delete(voiceNote)
+            reminderToSave.voiceNote = nil
         }
     }
-}
+    
+    private func refreshReminders() async {
+            do {
+                let updatedReminders = try await fetchReminders()
+                setReminders(updatedReminders)
+                logger.info("Refreshed reminders, new count: \(updatedReminders.count)")
+            } catch {
+                logger.error("Failed to refresh reminders: \(error.localizedDescription)")
+            }
+        }
+    }
 
-public extension Notification.Name {
-    static let reminderAdded = Notification.Name("reminderAdded")
-}
+    public extension Notification.Name {
+        static let reminderAdded = Notification.Name("reminderAdded")
+    }

@@ -18,24 +18,16 @@ struct SubheadingHeader: View {
     @State private var showError = false
     @State private var errorMessage = ""
     @State private var showOptions = false
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 if isEditing {
-                    TextField("Subheading name", text: $title, onCommit: {
-                        isEditing = false
-                        Task {
-                            do {
-                                subHeading.title = title
-                                try await viewModel.updateSubHeading(subHeading)
-                            } catch {
-                                showError = true
-                                errorMessage = error.localizedDescription
-                            }
+                    TextField("Subheading name", text: $title)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .onSubmit {
+                            updateSubheadingTitle()
                         }
-                    })
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
                 } else {
                     Text(subHeading.title ?? "Untitled")
                         .font(.headline)
@@ -50,14 +42,7 @@ struct SubheadingHeader: View {
                         Label("Edit", systemImage: "pencil")
                     }
                     Button(action: {
-                        Task {
-                            do {
-                                try await viewModel.deleteSubHeading(subHeading)
-                            } catch {
-                                showError = true
-                                errorMessage = error.localizedDescription
-                            }
-                        }
+                        deleteSubheading()
                     }) {
                         Label("Delete", systemImage: "trash")
                     }
@@ -76,5 +61,23 @@ struct SubheadingHeader: View {
         }, message: {
             Text(errorMessage)
         })
+    }
+    
+    private func updateSubheadingTitle() {
+        isEditing = false
+        Task {
+            do {
+                subHeading.title = title
+                await viewModel.updateSubHeading(subHeading)
+            }
+        }
+    }
+    
+    private func deleteSubheading() {
+        Task {
+            do {
+                await viewModel.deleteSubHeading(subHeading)
+            }
+        }
     }
 }

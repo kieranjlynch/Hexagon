@@ -56,6 +56,17 @@
                ReferencedContainer = "container:Hexagon.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DA6691792CBE9CD900E68780"
+               BuildableName = "HexagonDataTests.xctest"
+               BlueprintName = "HexagonDataTests"
+               ReferencedContainer = "container:Hexagon.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -18,7 +18,7 @@
     <entity name="Reminder" representedClassName="Reminder" syncable="YES">
         <attribute name="endDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isCompleted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
-        <attribute name="isInInbox" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isInInbox" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="notes" optional="YES" attributeType="String"/>
         <attribute name="notifications" optional="YES" attributeType="String"/>
         <attribute name="order" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
@@ -28,13 +28,13 @@
         <attribute name="reminderTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="startDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="tag" optional="YES" attributeType="String"/>
-        <attribute name="title" attributeType="String"/>
+        <attribute name="title" attributeType="String" defaultValueString=""/>
         <attribute name="url" optional="YES" attributeType="String"/>
         <relationship name="list" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TaskList" inverseName="reminders" inverseEntity="TaskList" spotlightIndexingEnabled="YES"/>
         <relationship name="location" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Location" inverseName="reminder" inverseEntity="Location" spotlightIndexingEnabled="YES"/>
         <relationship name="photos" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ReminderPhoto" inverseName="reminder" inverseEntity="ReminderPhoto"/>
         <relationship name="subHeading" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SubHeading" inverseName="reminders" inverseEntity="SubHeading"/>
-        <relationship name="tags" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Tag" inverseName="reminders" inverseEntity="Tag" spotlightIndexingEnabled="YES"/>
+        <relationship name="tags" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ReminderTag" inverseName="reminders" inverseEntity="ReminderTag" spotlightIndexingEnabled="YES"/>
         <relationship name="voiceNote" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="VoiceNote" inverseName="reminder" inverseEntity="VoiceNote"/>
     </entity>
     <entity name="ReminderPhoto" representedClassName="ReminderPhoto" syncable="YES">
@@ -42,17 +42,17 @@
         <attribute name="photoData" optional="YES" attributeType="Binary"/>
         <relationship name="reminder" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Reminder" inverseName="photos" inverseEntity="Reminder"/>
     </entity>
+    <entity name="ReminderTag" representedClassName="ReminderTag" syncable="YES">
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="tagID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="reminders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Reminder" inverseName="tags" inverseEntity="Reminder"/>
+    </entity>
     <entity name="SubHeading" representedClassName="SubHeading" syncable="YES">
         <attribute name="order" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="subheadingID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="reminders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Reminder" inverseName="subHeading" inverseEntity="Reminder"/>
         <relationship name="taskList" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="TaskList" inverseName="subHeadings" inverseEntity="TaskList"/>
-    </entity>
-    <entity name="Tag" representedClassName="Tag" syncable="YES">
-        <attribute name="name" optional="YES" attributeType="String"/>
-        <attribute name="tagID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <relationship name="reminders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Reminder" inverseName="tags" inverseEntity="Reminder"/>
     </entity>
     <entity name="TaskList" representedClassName="TaskList" syncable="YES">
         <attribute name="colorData" optional="YES" attributeType="Binary"/>

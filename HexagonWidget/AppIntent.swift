@@ -22,12 +22,20 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
     }
 }
 
+struct OpenAddReminderIntent: AppIntent {
+    static var title: LocalizedStringResource = "Add New Reminder"
+
+    func perform() async throws -> some IntentResult {
+        return .result()
+    }
+}
+
 struct TaskListEntity: AppEntity, Identifiable, TypeDisplayRepresentable, Equatable {
     let id: UUID
     let name: String
-    
+
     static var defaultQuery = TaskListQuery()
-    
+
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
@@ -39,7 +47,7 @@ struct TaskListEntity: AppEntity, Identifiable, TypeDisplayRepresentable, Equata
 
 struct TaskListQuery: EntityQuery {
     typealias Entity = TaskListEntity
-    
+
     func entities(for identifiers: [UUID]) async throws -> [TaskListEntity] {
         let taskLists = try await fetchTaskLists()
         return taskLists.filter { identifiers.contains($0.id) }

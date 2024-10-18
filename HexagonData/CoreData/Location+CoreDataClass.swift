@@ -1,8 +1,8 @@
 //
 //  Location+CoreDataClass.swift
-//  HexagonData
+//  Hexagon
 //
-//  Created by Kieran Lynch on 06/10/2024.
+//  Created by Kieran Lynch on 14/10/2024.
 //
 //
 

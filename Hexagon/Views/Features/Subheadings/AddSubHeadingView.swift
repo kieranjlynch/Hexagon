@@ -12,16 +12,16 @@ import HexagonData
 struct AddSubHeadingView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.colorScheme) var colorScheme
-
+    
     @State private var title: String = ""
     @State private var subHeadingsCount: Int = 0
     @State private var errorMessage: String?
     @State private var isErrorPresented: Bool = false
-
+    
     let taskList: TaskList
     let onSave: (SubHeading) -> Void
     let context: NSManagedObjectContext
-
+    
     var body: some View {
         NavigationView {
             Form {
@@ -38,7 +38,7 @@ struct AddSubHeadingView: View {
                 trailing: Button("Save") {
                     saveSubHeading()
                 }
-                .disabled(title.isEmpty)
+                    .disabled(title.isEmpty)
             )
         }
         .onAppear {
@@ -48,11 +48,11 @@ struct AddSubHeadingView: View {
             Alert(title: Text("Error"), message: Text(errorMessage ?? ""), dismissButton: .default(Text("OK")))
         }
     }
-
+    
     private func saveSubHeading() {
         Task {
             do {
-                let subheadingService = SubheadingService(context: context)
+                let subheadingService = SubheadingService()
                 let newSubHeading = try await subheadingService.saveSubHeading(
                     title: title,
                     taskList: taskList
@@ -65,11 +65,11 @@ struct AddSubHeadingView: View {
             }
         }
     }
-
+    
     private func fetchSubHeadingsCount() {
         Task {
             do {
-                let subheadingService = SubheadingService(context: context)
+                let subheadingService = SubheadingService()
                 subHeadingsCount = try await subheadingService.fetchSubHeadingsCount(for: taskList)
             } catch {
                 errorMessage = "Failed to fetch subheadings count: \(error.localizedDescription)"

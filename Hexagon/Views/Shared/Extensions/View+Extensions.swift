@@ -168,7 +168,6 @@ extension View {
     
     func listSettings() -> some View {
         self
-            .listRowSeparator(.hidden)
             .scrollContentBackground(.hidden)
             .background(Color(UIColor.systemBackground))
     }
@@ -180,7 +179,7 @@ extension View {
                 .padding(8)
                 .background(style == .primary ? appTintColor : Color.gray.opacity(style == .primary ? 0.3 : 0.2))
                 .foregroundColor(style == .primary ? .white : Color.primary)
-                .cornerRadius(8)
+                .cornerRadius(4)
         }
     }
     
@@ -193,13 +192,11 @@ extension View {
     }
     
     func cardStyle() -> some View {
-        self.cornerRadius(8)
+        self
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .cornerRadius(4)
             .adaptiveBackground()
             .adaptiveShadow()
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-            )
     }
     
     func dateNavButton(systemName: String, action: @escaping () -> Void) -> some View {

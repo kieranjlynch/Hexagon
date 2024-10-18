@@ -1,8 +1,8 @@
 //
-//  Tag+CoreDataProperties.swift
-//  HexagonData
+//  ReminderTag+CoreDataProperties.swift
+//  Hexagon
 //
-//  Created by Kieran Lynch on 06/10/2024.
+//  Created by Kieran Lynch on 14/10/2024.
 //
 //
 
@@ -10,10 +10,10 @@ import Foundation
 import CoreData
 
 
-extension Tag {
+extension ReminderTag {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<Tag> {
-        return NSFetchRequest<Tag>(entityName: "Tag")
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<ReminderTag> {
+        return NSFetchRequest<ReminderTag>(entityName: "ReminderTag")
     }
 
     @NSManaged public var name: String?
@@ -23,7 +23,7 @@ extension Tag {
 }
 
 // MARK: Generated accessors for reminders
-extension Tag {
+extension ReminderTag {
 
     @objc(addRemindersObject:)
     @NSManaged public func addToReminders(_ value: Reminder)
@@ -39,6 +39,6 @@ extension Tag {
 
 }
 
-extension Tag : Identifiable {
+extension ReminderTag : Identifiable {
 
 }

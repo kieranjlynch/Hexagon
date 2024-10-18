@@ -1,5 +1,5 @@
 //
-//   Transferable+CoreDataEntities.swift
+//  Transferable+CoreDataEntities.swift
 //  Hexagon
 //
 //  Created by Kieran Lynch on 27/09/2024.
@@ -9,8 +9,9 @@ import Foundation
 import UniformTypeIdentifiers
 import CoreData
 import SwiftUI
+import HexagonData
 
-extension SubHeading: Transferable {
+extension SubHeading: @retroactive Transferable {
     public static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(contentType: .hexagonSubHeading) { subHeading in
             guard let data = subHeading.objectID.uriRepresentation().absoluteString.data(using: .utf8) else {
@@ -41,7 +42,7 @@ extension SubHeading: Transferable {
     }
 }
 
-extension Reminder: Transferable {
+extension Reminder: @retroactive Transferable {
     public static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(contentType: .hexagonReminder) { reminder in
             guard let data = reminder.objectID.uriRepresentation().absoluteString.data(using: .utf8) else {
@@ -73,6 +74,6 @@ extension Reminder: Transferable {
 }
 
 extension UTType {
-    public static let hexagonSubHeading = UTType(exportedAs: "com.yourdomain.hexagon.subheading")
-    public static let hexagonReminder = UTType(exportedAs: "com.yourdomain.hexagon.reminder")
+    public static let hexagonSubHeading = UTType(exportedAs: "com.klynch.hexagon.subheading")
+    public static let hexagonReminder = UTType(exportedAs: "com.klynch.hexagon.reminder")
 }

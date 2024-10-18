@@ -9,7 +9,7 @@ import SwiftUI
 import HexagonData
 
 struct TagRowView: View {
-    let tag: Tag
+    let tag: ReminderTag
     let isSelected: Bool
     let appTintColor: Color
     @Environment(\.colorScheme) var colorScheme

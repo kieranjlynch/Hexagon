@@ -12,20 +12,24 @@ struct VoiceNoteFieldView: View {
     var colorScheme: ColorScheme
     
     var body: some View {
-        NavigationLink {
-            VoiceNoteSheetView(voiceNoteData: $voiceNoteData)
-        } label: {
-            Label {
-                Text("Voice Note")
-            } icon: {
-                Image(systemName: "mic")
+        HStack {
+            NavigationLink {
+                VoiceNoteSheetView(voiceNoteData: $voiceNoteData)
+            } label: {
+                Label {
+                    Text("Voice Note")
+                } icon: {
+                    Image(systemName: "mic")
+                }
+                .foregroundColor(colorScheme == .dark ? .white : .black)
             }
-            .foregroundColor(colorScheme == .dark ? .white : .black)
-        }
-        Spacer()
-        if voiceNoteData != nil {
-            Image(systemName: "checkmark")
-                .foregroundColor(Color.accentColor)
+            
+            Spacer()
+            
+            if voiceNoteData != nil {
+                Image(systemName: "checkmark")
+                    .foregroundColor(Color.accentColor)
+            }
         }
     }
 }

@@ -5,11 +5,12 @@
 //  Created by Kieran Lynch on 17/09/2024.
 //
 
-import Foundation
+@preconcurrency import Foundation
 import UniformTypeIdentifiers
 import CoreData
+import HexagonData
 
-extension Reminder: NSItemProviderWriting {
+extension Reminder: @retroactive NSItemProviderWriting {
     public static var writableTypeIdentifiersForItemProvider: [String] {
         [UTType.hexagonReminder.identifier]
     }
@@ -23,8 +24,8 @@ extension Reminder: NSItemProviderWriting {
 }
 
 extension Reminder {
-    public var tagsArray: [Tag] {
-        let tagSet = tags as? Set<Tag> ?? []
+    public var tagsArray: [ReminderTag] {
+        let tagSet = tags as? Set<ReminderTag> ?? []
         return Array(tagSet)
     }
     

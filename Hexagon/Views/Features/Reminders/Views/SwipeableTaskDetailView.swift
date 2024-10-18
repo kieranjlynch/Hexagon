@@ -15,10 +15,10 @@ struct SwipeableTaskDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var locationService: LocationService
     @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject var reminderService: ReminderService
     @State private var showEditView = false
     @State private var showScheduleView = false
     @State private var showDeleteConfirmation = false
-    @EnvironmentObject var reminderService: ReminderService
     
     init(reminders: Binding<[Reminder]>, currentIndex: Binding<Int>) {
         _viewModel = StateObject(wrappedValue: SwipeableTaskDetailViewModel(reminders: reminders.wrappedValue))

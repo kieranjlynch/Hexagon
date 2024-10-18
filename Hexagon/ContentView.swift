@@ -49,22 +49,14 @@ struct ContentView: View {
             print("ReminderService in ContentView: \(reminderService)")
         }
     }
-
+    
     private var tabViewLayout: some View {
         TabView(selection: $selectedTab) {
             settingsTab
                 .adaptiveForegroundAndBackground()
                 .adaptiveToolbarBackground()
             
-            searchTab
-                .adaptiveForegroundAndBackground()
-                .adaptiveToolbarBackground()
-            
             timelineTab
-                .adaptiveForegroundAndBackground()
-                .adaptiveToolbarBackground()
-            
-            inboxTab
                 .adaptiveForegroundAndBackground()
                 .adaptiveToolbarBackground()
             
@@ -90,15 +82,9 @@ struct ContentView: View {
                 case "Lists":
                     listsView
                         .navigationBarSetup(title: "Lists")
-                case "Inbox":
-                    inboxView
-                        .navigationBarSetup(title: "Inbox")
                 case "Settings":
                     settingsView
                         .navigationBarSetup(title: "Settings")
-                case "Search":
-                    searchView
-                        .navigationBarSetup(title: "Search")
                 case "Timeline":
                     timelineView
                         .navigationBarSetup(title: "Timeline")
@@ -120,16 +106,6 @@ struct ContentView: View {
             .accessibilityHint(Text("Navigate to settings"))
     }
     
-    private var searchTab: some View {
-        searchView
-            .tabItem {
-                Label("Search", systemImage: "magnifyingglass")
-            }
-            .tag("Search")
-            .accessibilityLabel(Text("Search Tab"))
-            .accessibilityHint(Text("Navigate to search"))
-    }
-    
     private var timelineTab: some View {
         timelineView
             .tabItem {
@@ -138,16 +114,6 @@ struct ContentView: View {
             .tag("Timeline")
             .accessibilityLabel(Text("Timeline Tab"))
             .accessibilityHint(Text("Navigate to your timeline"))
-    }
-    
-    private var inboxTab: some View {
-        inboxView
-            .tabItem {
-                Label("Inbox", systemImage: "tray")
-            }
-            .tag("Inbox")
-            .accessibilityLabel(Text("Inbox Tab"))
-            .accessibilityHint(Text("Navigate to inbox"))
     }
     
     private var listsTab: some View {
@@ -165,27 +131,8 @@ struct ContentView: View {
             .environmentObject(appSettings)
     }
     
-    private var searchView: some View {
-        SearchView()
-            .environmentObject(reminderService)
-            .environmentObject(locationService)
-            .environmentObject(appSettings)
-    }
-    
-    private var inboxView: some View {
-        InboxView(reminderService: reminderService)
-            .environmentObject(reminderService)
-            .environmentObject(locationService)
-    }
-    
     private var listsView: some View {
-        ListsView(
-            selectedListID: $selectedListID,
-            showFloatingActionButtonTip: $showFloatingActionButtonTip,
-            showInboxTip: $showInboxTip,
-            floatingActionButtonTip: floatingActionButtonTip,
-            inboxTip: inboxTip
-        )
+        ListsView(context: viewContext, reminderService: reminderService)
         .environmentObject(reminderService)
         .environmentObject(locationService)
         .environmentObject(appSettings)

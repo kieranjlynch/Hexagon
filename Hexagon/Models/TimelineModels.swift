@@ -13,13 +13,13 @@ struct TimelineTask: Identifiable {
     let title: String
     let startDate: Date
     let endDate: Date?
-    let list: HexagonData.TaskList?
+    let list: TaskList?
     let isCompleted: Bool
 }
 
 enum ListFilter: Hashable {
     case all
     case inbox
-    case specificList(HexagonData.TaskList)
+    case specificList(TaskList)
 }
 

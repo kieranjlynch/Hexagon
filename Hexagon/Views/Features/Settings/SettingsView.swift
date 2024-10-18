@@ -14,15 +14,14 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
-                    settingsNavigationLink("Appearance")
-                    settingsNavigationLink("Layout")
-                    settingsNavigationLink("Dates")
-                    settingsNavigationLink("Times")
-                    settingsNavigationLink("Permissions")
-                    settingsNavigationLink("Notifications")
-                }
+                settingsNavigationLink("Appearance", icon: "drop.halffull", color: .blue)
+                    .listRowSeparator(.hidden)
+                settingsNavigationLink("Dates", icon: "calendar", color: .green)
+                    .listRowSeparator(.hidden)
+                settingsNavigationLink("Permissions", icon: "lock.open.fill", color: .orange)
+                    .listRowSeparator(.hidden)
             }
+            .padding(.top, 1)
             .listSettings()
             .navigationBarSetup(title: "Settings")
             .navigationDestination(for: String.self) { value in
@@ -32,9 +31,13 @@ struct SettingsView: View {
     }
     
     @ViewBuilder
-    private func settingsNavigationLink(_ title: String) -> some View {
+    private func settingsNavigationLink(_ title: String, icon: String, color: Color) -> some View {
         NavigationLink(value: title) {
-            Text(title)
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                Text(title)
+            }
         }
         .adaptiveColors()
     }
@@ -44,16 +47,10 @@ struct SettingsView: View {
         switch value {
         case "Appearance":
             AppearanceSettingsView()
-        case "Layout":
-            LayoutSettingsView()
         case "Dates":
             DateSettingsView()
-        case "Times":
-            TimeSettingsView()
         case "Permissions":
             PermissionsView(onContinue: {}, isInSettings: true)
-        case "Notifications":
-            NotificationSettingsView()
         default:
             EmptyView()
         }

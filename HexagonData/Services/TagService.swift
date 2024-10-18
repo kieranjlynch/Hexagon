@@ -19,23 +19,19 @@ public class TagService: ObservableObject {
         self.persistentContainer = persistenceController.persistentContainer
     }
     
-    public func fetchTags() async throws -> [Tag] {
-        let request: NSFetchRequest<Tag> = Tag.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \Tag.name, ascending: true)]
+    public func fetchTags() async throws -> [ReminderTag] {
+        let request: NSFetchRequest<ReminderTag> = ReminderTag.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \ReminderTag.name, ascending: true)]
         
         return try await persistentContainer.viewContext.perform {
-            do {
-                return try self.persistentContainer.viewContext.fetch(request)
-            } catch {
-                throw error
-            }
+            try self.persistentContainer.viewContext.fetch(request)
         }
     }
     
-    public func createTag(name: String) async throws -> Tag {
+    public func createTag(name: String) async throws -> ReminderTag {
         let context = persistentContainer.viewContext
         return try await context.perform {
-            let newTag = Tag(context: context)
+            let newTag = ReminderTag(context: context)
             newTag.name = name
             newTag.tagID = UUID()
             try context.save()

@@ -19,8 +19,8 @@ public struct AddReminderView: View {
     @AppStorage("preferredTaskType") private var preferredTaskType: String = "Tasks"
     public var onSave: ((Reminder, [String], [UIImage]) -> Void)?
     
-    public init(reminder: Reminder? = nil, onSave: ((Reminder, [String], [UIImage]) -> Void)? = nil) {
-        _viewModel = StateObject(wrappedValue: AddReminderViewModel(reminder: reminder))
+    public init(reminder: Reminder? = nil, defaultList: TaskList? = nil, onSave: ((Reminder, [String], [UIImage]) -> Void)? = nil) {
+        _viewModel = StateObject(wrappedValue: AddReminderViewModel(reminder: reminder, defaultList: defaultList))
         self.onSave = onSave
     }
     
@@ -61,21 +61,21 @@ public struct AddReminderView: View {
                         .listRowSeparator(.hidden, edges: .all)
                 }
                 .listRowBackground(Color.clear)
-                .scrollContentBackground(.hidden)
-                .adaptiveBackground()
-                
-                ButtonRow(
-                    isFormValid: viewModel.isFormValid,
-                    saveAction: { Task { await save() } },
-                    dismissAction: { dismiss() },
-                    colorScheme: colorScheme
-                )
-            }
-            .navigationBarSetup(
-                title: viewModel.reminder == nil ? "Add \(preferredTaskType.dropLast())" : "Edit \(preferredTaskType.dropLast())"
-            )
-            .overlay(expandedPhotoOverlay)
-        }
+                             .scrollContentBackground(.hidden)
+                             .adaptiveBackground()
+                             
+                             ButtonRowView(
+                                 isFormValid: viewModel.isFormValid,
+                                 saveAction: { await save() },
+                                 dismissAction: { dismiss() },
+                                 colorScheme: colorScheme
+                             )
+                         }
+                         .navigationBarSetup(
+                             title: viewModel.reminder == nil ? "Add \(preferredTaskType.dropLast())" : "Edit \(preferredTaskType.dropLast())"
+                         )
+                         .overlay(expandedPhotoOverlay)
+                     }
         .onAppear {
             viewModel.reminderService = reminderService
             viewModel.locationService = locationService
@@ -123,31 +123,14 @@ public struct AddReminderView: View {
             viewModel.updatePhotos(updatedPhotos)
             NotificationCenter.default.post(name: .reminderAdded, object: nil)
             onSave?(savedReminder, updatedTags, updatedPhotos)
+            
+            if viewModel.selectedList != nil {
+               
+            }
+            
             dismiss()
         } catch {
             viewModel.errorMessage = error.localizedDescription
         }
-    }
-}
-
-struct ButtonRow: View {
-    let isFormValid: Bool
-    let saveAction: () async -> Void
-    let dismissAction: () -> Void
-    var colorScheme: ColorScheme
-    
-    var body: some View {
-        HStack {
-            CustomButton(title: "Cancel", action: dismissAction, style: .secondary)
-            
-            CustomButton(title: "Save", action: {
-                Task {
-                    await saveAction()
-                }
-            }, style: .primary)
-            .disabled(!isFormValid)
-        }
-        .padding()
-        .background(colorScheme == .dark ? Color.black : Color.white)
     }
 }

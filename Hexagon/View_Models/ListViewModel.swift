@@ -24,12 +24,21 @@ class ListViewModel: ObservableObject {
     init(context: NSManagedObjectContext, reminderService: ReminderService) {
         self.context = context
         self.reminderService = reminderService
-        self.subheadingService = SubheadingService(context: context)
+        self.subheadingService = SubheadingService()
         
         Task {
             await self.loadTaskLists()
         }
     }
+    
+    func getIncompleteRemindersCount(for taskList: TaskList) -> Int {
+        guard let reminders = taskList.reminders?.allObjects as? [Reminder] else {
+            return 0
+        }
+        return reminders.filter { !$0.isCompleted }.count
+    }
+    
+    // MARK: - Task Lists and SubHeadings
     
     func loadTaskLists() async {
         do {
@@ -39,17 +48,29 @@ class ListViewModel: ObservableObject {
         }
     }
     
-    func fetchSubHeadings(for taskList: TaskList?) async {
+    func deleteTaskList(_ taskList: TaskList) async {
         do {
-            if let taskList = taskList {
-                subHeadings = try await subheadingService.fetchSubHeadings(for: taskList)
-            } else {
-                print("TaskList is nil, cannot fetch subheadings.")
-            }
+            try await listService.deleteTaskList(taskList)
+            await loadTaskLists()
+        } catch {
+            print("Error deleting task list: \(error)")
+        }
+    }
+    
+    func fetchSubHeadings(for taskList: TaskList?) async {
+        guard let taskList = taskList else {
+            print("TaskList is nil, cannot fetch subheadings.")
+            return
+        }
+        
+        do {
+            subHeadings = try await subheadingService.fetchSubHeadings(for: taskList)
         } catch {
             print("Error fetching subheadings: \(error)")
         }
     }
+    
+    // MARK: - Add, Update, Delete SubHeadings
     
     func addSubHeading(title: String, to taskList: TaskList?) async {
         guard let taskList = taskList else {
@@ -82,6 +103,8 @@ class ListViewModel: ObservableObject {
             print("Error deleting subheading: \(error)")
         }
     }
+    
+    // MARK: - Moving and Reordering SubHeadings and Reminders
     
     func moveSubHeadings(from source: IndexSet, to destination: Int) async {
         var revisedSubHeadings = subHeadings

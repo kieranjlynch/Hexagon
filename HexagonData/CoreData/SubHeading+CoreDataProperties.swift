@@ -1,46 +1,46 @@
-//
-//  SubHeading+CoreDataProperties.swift
-//  HexagonData
-//
-//  Created by Kieran Lynch on 06/10/2024.
-//
-//
+    //
+    //  SubHeading+CoreDataProperties.swift
+    //  Hexagon
+    //
+    //  Created by Kieran Lynch on 14/10/2024.
+    //
+    //
 
-import Foundation
-import CoreData
+    import Foundation
+    import CoreData
 
 
-extension SubHeading {
+    extension SubHeading {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<SubHeading> {
-        return NSFetchRequest<SubHeading>(entityName: "SubHeading")
+        @nonobjc public class func fetchRequest() -> NSFetchRequest<SubHeading> {
+            return NSFetchRequest<SubHeading>(entityName: "SubHeading")
+        }
+
+        @NSManaged public var order: Int16
+        @NSManaged public var subheadingID: UUID?
+        @NSManaged public var title: String?
+        @NSManaged public var reminders: NSSet?
+        @NSManaged public var taskList: TaskList?
+
     }
 
-    @NSManaged public var order: Int16
-    @NSManaged public var subheadingID: UUID?
-    @NSManaged public var title: String?
-    @NSManaged public var reminders: NSSet?
-    @NSManaged public var taskList: TaskList?
+    // MARK: Generated accessors for reminders
+    extension SubHeading {
 
-}
+        @objc(addRemindersObject:)
+        @NSManaged public func addToReminders(_ value: Reminder)
 
-// MARK: Generated accessors for reminders
-extension SubHeading {
+        @objc(removeRemindersObject:)
+        @NSManaged public func removeFromReminders(_ value: Reminder)
 
-    @objc(addRemindersObject:)
-    @NSManaged public func addToReminders(_ value: Reminder)
+        @objc(addReminders:)
+        @NSManaged public func addToReminders(_ values: NSSet)
 
-    @objc(removeRemindersObject:)
-    @NSManaged public func removeFromReminders(_ value: Reminder)
+        @objc(removeReminders:)
+        @NSManaged public func removeFromReminders(_ values: NSSet)
 
-    @objc(addReminders:)
-    @NSManaged public func addToReminders(_ values: NSSet)
+    }
 
-    @objc(removeReminders:)
-    @NSManaged public func removeFromReminders(_ values: NSSet)
+    extension SubHeading : Identifiable {
 
-}
-
-extension SubHeading : Identifiable {
-
-}
+    }

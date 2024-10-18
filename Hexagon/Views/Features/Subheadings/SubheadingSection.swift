@@ -21,8 +21,9 @@ public struct SubheadingSection: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             SubheadingHeader(subHeading: subHeading, viewModel: viewModel)
-            
-            ForEach(viewModel.reminders.filter { $0.subHeading == subHeading }, id: \.objectID) { reminder in
+
+            let reminders = viewModel.filteredReminders(for: subHeading)
+            ForEach(reminders, id: \.objectID) { reminder in
                 TaskCardView(
                     reminder: reminder,
                     onTap: {
@@ -30,33 +31,21 @@ public struct SubheadingSection: View {
                     },
                     onToggleCompletion: {
                         Task {
-                            await viewModel.toggleCompletion(reminder)
+                            await viewModel.toggleCompletion(for: reminder)
                         }
                     },
                     selectedDate: Date(),
                     selectedDuration: 60.0
                 )
                 .background(Color(UIColor.systemBackground))
-                .cornerRadius(8)
+                .cornerRadius(4)
                 .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
                 .draggable(reminder)
             }
         }
         .padding(.vertical, 8)
         .dropDestination(for: Reminder.self) { reminders, _ in
-            Task {
-                isPerformingDrop = true
-                for reminder in reminders {
-                    let success = await viewModel.handleDrop(reminders: [reminder], to: subHeading)
-                    if !success {
-                        dropFeedback = IdentifiableError(message: "Failed to move reminder")
-                        isPerformingDrop = false
-                        return
-                    }
-                }
-                isPerformingDrop = false
-                dropFeedback = IdentifiableError(message: "Reminder(s) moved successfully")
-            }
+            handleDrop(reminders: reminders)
             return true
         }
         .overlay {
@@ -74,6 +63,19 @@ public struct SubheadingSection: View {
             AddReminderView(reminder: reminder)
                 .environmentObject(viewModel.reminderService)
                 .environmentObject(viewModel.locationService)
+        }
+    }
+
+    private func handleDrop(reminders: [Reminder]) {
+        Task {
+            isPerformingDrop = true
+            let success = await viewModel.handleDrop(reminders: reminders, to: subHeading)
+            isPerformingDrop = false
+            if success {
+                dropFeedback = IdentifiableError(message: "Reminder(s) moved successfully")
+            } else {
+                dropFeedback = IdentifiableError(message: "Failed to move reminder")
+            }
         }
     }
 }

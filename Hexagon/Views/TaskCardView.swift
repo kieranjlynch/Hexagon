@@ -18,47 +18,50 @@ struct TaskCardView: View {
     let onToggleCompletion: () -> Void
     let selectedDate: Date
     let selectedDuration: Double
-
+    
     @State private var isTogglingCompletion = false
-
+    @State private var isVisible = true
+    
     var body: some View {
-        HStack {
-            toggleCompletionButton
-            taskDetails
-            Spacer()
+        Group {
+            if isVisible {
+                GroupBox {
+                    HStack(alignment: .center, spacing: 8) {
+                        toggleCompletionButton
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            taskTitle
+                            dueDate
+                            taskIcons
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .cardStyle()
+                .onTapGesture(perform: onTap)
+                .draggable(reminder)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(reminder.title ?? "Untitled Task")
+                .accessibilityHint("Double-tap for more options")
+            }
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .cardStyle()
-        .onTapGesture(perform: onTap)
-        .draggable(reminder)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(reminder.title ?? "Untitled Task")
-        .accessibilityHint("Double-tap for more options")
     }
-
+    
     private var toggleCompletionButton: some View {
-        completionToggleButton(isCompleted: reminder.isCompleted, action: toggleCompletion)
-    }
-
-    private var taskDetails: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            taskTitle
-            dueDate
-            taskIcons
+        Button(action: toggleCompletion) {
+            Image(systemName: reminder.isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(appSettings.appTintColor)
+                .frame(width: 30, height: 30)
         }
+        .buttonStyle(PlainButtonStyle())
     }
-
+    
     private var taskTitle: some View {
-        Text("Task: \(reminder.title ?? "Untitled Task")")
+        Text(reminder.title ?? "Untitled Task")
             .foregroundColor(colorScheme == .dark ? .white : .black)
             .font(.headline)
-            .strikethrough(reminder.isCompleted)
-            .accessibilityLabel("Task title")
-            .accessibilityValue(reminder.title ?? "Untitled Task")
-            .accessibilityHint("Double-tap to view or edit this task")
     }
-
+    
     private var dueDate: some View {
         Group {
             if let dueDate = reminder.endDate {
@@ -70,7 +73,7 @@ struct TaskCardView: View {
             }
         }
     }
-
+    
     private var taskIcons: some View {
         HStack(spacing: 8) {
             if !reminder.tagsArray.isEmpty {
@@ -87,21 +90,26 @@ struct TaskCardView: View {
             }
         }
     }
-
+    
     private func taskIcon(systemName: String, label: String, hint: String) -> some View {
         taskIconView(systemName: systemName, label: label, hint: hint, tintColor: appSettings.appTintColor)
     }
-
+    
     private func toggleCompletion() {
         guard !isTogglingCompletion else { return }
         isTogglingCompletion = true
-        Task {
-            onToggleCompletion()
-            isTogglingCompletion = false
-        }
+        onToggleCompletion()
+        isTogglingCompletion = false
     }
-
+    
     private func formatDate(_ date: Date) -> String {
         return DateFormatter.sharedDateFormatter.string(from: date)
     }
+}
+
+func taskIconView(systemName: String, label: String, hint: String, tintColor: Color) -> some View {
+    Image(systemName: systemName)
+        .foregroundColor(tintColor)
+        .accessibilityLabel(label)
+        .accessibilityHint(hint)
 }

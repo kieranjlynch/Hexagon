@@ -1,9 +1,9 @@
-    //
-    //  ReminderRow.swift
-    //  Hexagon
-    //
-    //  Created by Kieran Lynch on 18/09/2024.
-    //
+//
+//  ReminderRow.swift
+//  Hexagon
+//
+//  Created by Kieran Lynch on 18/09/2024.
+//
 
 import SwiftUI
 import CoreData
@@ -29,7 +29,11 @@ struct ReminderRow: View {
             },
             onToggleCompletion: {
                 Task {
-                    await viewModel.toggleCompletion(reminder)
+                    if reminder.isCompleted {
+                        await viewModel.deleteReminder(reminder)
+                    } else {
+                        await viewModel.toggleCompletion(for: reminder)
+                    }
                 }
             },
             selectedDate: Date(),

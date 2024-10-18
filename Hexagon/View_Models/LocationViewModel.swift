@@ -9,6 +9,7 @@ import SwiftUI
 import os
 import MapKit
 import HexagonData
+import Combine
 
 @MainActor
 class LocationViewModel: ObservableObject {
@@ -19,10 +20,33 @@ class LocationViewModel: ObservableObject {
     
     private let locationService: LocationService
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "LocationViewModel")
+    private var cancellables = Set<AnyCancellable>()
     
     init(locationService: LocationService) {
         self.locationService = locationService
+        setupCombineBindings()
     }
+    
+    // MARK: - Combine Bindings
+    
+    private func setupCombineBindings() {
+        // Monitor searchText changes and trigger search automatically
+        $searchText
+            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
+            .removeDuplicates()
+            .sink { [weak self] searchText in
+                guard !searchText.isEmpty else {
+                    self?.searchResults = []
+                    return
+                }
+                Task {
+                    await self?.searchLocations()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Async/Await Functions
     
     func searchLocations() async {
         guard !searchText.isEmpty else {
@@ -56,10 +80,12 @@ class LocationViewModel: ObservableObject {
         switch result {
         case .success: break
         case .failure(let error):
-            logger.error("Failed to save location: \(error)")
+            logger.error("Failed to save location: \(error.localizedDescription)")
             errorMessage = "Failed to save location: \(error.localizedDescription)"
         }
     }
+    
+    // MARK: - Error Handling
     
     private func handleSearchError(_ error: Error) {
         logger.error("Failed to search locations: \(error.localizedDescription)")

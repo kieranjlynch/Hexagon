@@ -6,17 +6,17 @@
 //
 
 import SwiftUI
-import HexagonData
 
 struct TaskView: View {
     let task: TimelineTask
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var appSettings: AppSettings
 
     var body: some View {
         Text(task.title)
             .padding(5)
-            .background(colorScheme == .dark ? Color.blue.opacity(0.3) : Color.blue.opacity(0.2))
-            .cornerRadius(5)
+            .background(colorScheme == .dark ? appSettings.appTintColor.opacity(0.3) : appSettings.appTintColor.opacity(0.2))
+            .cornerRadius(4)
     }
 }
 
