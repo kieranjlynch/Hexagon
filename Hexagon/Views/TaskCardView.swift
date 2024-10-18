@@ -45,6 +45,13 @@ struct TaskCardView: View {
                 .accessibilityHint("Double-tap for more options")
             }
         }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .cardStyle()
+        .onTapGesture(perform: onTap)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(reminder.title ?? "Untitled Task")
+        .accessibilityHint("Double-tap for more options")
     }
     
     private var toggleCompletionButton: some View {

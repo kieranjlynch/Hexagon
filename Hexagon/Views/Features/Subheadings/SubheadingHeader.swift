@@ -51,10 +51,6 @@ struct SubheadingHeader: View {
                         .padding()
                 }
             }
-            
-            Divider()
-                .background(Color.gray.opacity(0.5))
-                .padding(.top, 4)
         }
         .alert("Error", isPresented: $showError, actions: {
             Button("OK", role: .cancel) { }
