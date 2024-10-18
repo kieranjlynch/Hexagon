@@ -35,7 +35,7 @@ struct ReminderRow: View {
             selectedDate: Date(),
             selectedDuration: 60.0
         )
-//        .draggable(reminder)
+        .draggable(reminder)
         .droppableReminder(to: Optional<SubHeading>.none)
         .fullScreenCover(isPresented: $showSwipeableTaskDetail) {
             SwipeableTaskDetailView(reminders: $viewModel.reminders, currentIndex: $currentReminderIndex)

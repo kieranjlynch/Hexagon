@@ -14,7 +14,6 @@ import HexagonData
 public class ListDetailViewModel: ObservableObject {
     
     @Published var isDragging: Bool = false
-    
     @Published public var subHeadings: [SubHeading] = []
     @Published public var reminders: [Reminder] = []
     @Published public var error: IdentifiableError?
@@ -126,7 +125,7 @@ public class ListDetailViewModel: ObservableObject {
             try await context.perform {
                 try self.context.save()
             }
-            await loadContent()
+            self.isDragging = false
             return true
         } catch {
             print("Error handling drop: \(error)")

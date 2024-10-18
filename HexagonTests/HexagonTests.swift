@@ -117,7 +117,7 @@ struct HexagonTests {
         
         try await reminderService.updateReminderCompletionStatus(reminder: savedReminder, isCompleted: true)
         
-        let updatedReminders = try await reminderService.fetchAllReminders()
+        let updatedReminders = try await reminderService.fetchReminders()
         guard let updatedReminder = updatedReminders.first(where: { $0.title == title }) else {
             throw TestFailure("Updated reminder not found")
         }
@@ -311,7 +311,7 @@ struct HexagonTests {
         
         try await reminderService.deleteReminder(reminder)
         
-        let fetchedReminders = try await reminderService.fetchAllReminders()
+        let fetchedReminders = try await reminderService.fetchReminders()
         #expect(!fetchedReminders.contains(where: { $0.title == "Delete Me" }))
     }
     
@@ -355,7 +355,7 @@ struct HexagonTests {
         #expect(updatedReminder.title == "Updated")
         #expect(updatedReminder.priority == 2)
         
-        let fetchedReminders = try await reminderService.fetchAllReminders()
+        let fetchedReminders = try await reminderService.fetchReminders()
         guard let fetchedUpdatedReminder = fetchedReminders.first(where: { $0.title == "Updated" }) else {
             throw TestFailure("Updated reminder not found")
         }
