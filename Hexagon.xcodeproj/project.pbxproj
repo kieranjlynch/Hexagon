@@ -7,10 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		95E637242CBEC52200B538DC /* EmptyDropView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E637232CBEC52200B538DC /* EmptyDropView.swift */; };
+		95E6375C2CC2BFC400B538DC /* DropViewDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E6375B2CC2BFBC00B538DC /* DropViewDelegate.swift */; };
 		DA07096E2C99E053002D1F35 /* ListDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA07096D2C99E04F002D1F35 /* ListDetailViewModel.swift */; };
 		DA0709702C99E9B1002D1F35 /* ListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA07096F2C99E9AC002D1F35 /* ListItemView.swift */; };
 		DA1F10D22C9AF13B004A2AB0 /* ReminderRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10D12C9AF139004A2AB0 /* ReminderRow.swift */; };
-		DA1F10D42C9AF163004A2AB0 /* SubheadingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10D32C9AF162004A2AB0 /* SubheadingSection.swift */; };
 		DA1F10D62C9AF184004A2AB0 /* SubheadingHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10D52C9AF182004A2AB0 /* SubheadingHeader.swift */; };
 		DA1F10D82C9AF1B6004A2AB0 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10D72C9AF1B3004A2AB0 /* View+Extensions.swift */; };
 		DA1F10DA2C9B041D004A2AB0 /* SearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA1F10D92C9B041C004A2AB0 /* SearchViewModel.swift */; };
@@ -177,10 +178,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		95E637232CBEC52200B538DC /* EmptyDropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyDropView.swift; sourceTree = "<group>"; };
+		95E6375B2CC2BFBC00B538DC /* DropViewDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropViewDelegate.swift; sourceTree = "<group>"; };
 		DA07096D2C99E04F002D1F35 /* ListDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailViewModel.swift; sourceTree = "<group>"; };
 		DA07096F2C99E9AC002D1F35 /* ListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListItemView.swift; sourceTree = "<group>"; };
 		DA1F10D12C9AF139004A2AB0 /* ReminderRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderRow.swift; sourceTree = "<group>"; };
-		DA1F10D32C9AF162004A2AB0 /* SubheadingSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubheadingSection.swift; sourceTree = "<group>"; };
 		DA1F10D52C9AF182004A2AB0 /* SubheadingHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubheadingHeader.swift; sourceTree = "<group>"; };
 		DA1F10D72C9AF1B3004A2AB0 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Extensions.swift"; sourceTree = "<group>"; };
 		DA1F10D92C9B041C004A2AB0 /* SearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModel.swift; sourceTree = "<group>"; };
@@ -645,6 +647,7 @@
 		DA7D7D4B2C808E3D00CC258C /* Hexagon */ = {
 			isa = PBXGroup;
 			children = (
+				95E6375B2CC2BFBC00B538DC /* DropViewDelegate.swift */,
 				DA7D7E172C809E5D00CC258C /* Info.plist */,
 				DA7D7D4C2C808E3D00CC258C /* HexagonApp.swift */,
 				DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */,
@@ -684,6 +687,7 @@
 				DA8213112C93326D00BC9B41 /* CustomButton.swift */,
 				DA7D7DCD2C80946A00CC258C /* PrioritySheetView.swift */,
 				DA1F10D12C9AF139004A2AB0 /* ReminderRow.swift */,
+				95E637232CBEC52200B538DC /* EmptyDropView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -693,7 +697,6 @@
 			children = (
 				DA1F10D52C9AF182004A2AB0 /* SubheadingHeader.swift */,
 				DA33C4E32C9864D9002F2613 /* AddSubHeadingView.swift */,
-				DA1F10D32C9AF162004A2AB0 /* SubheadingSection.swift */,
 			);
 			path = Subheadings;
 			sourceTree = "<group>";
@@ -978,7 +981,6 @@
 				DA7D7D852C80909200CC258C /* ImagePicker.swift in Sources */,
 				DA1F10E22C9B0F6E004A2AB0 /* LocationViewModel.swift in Sources */,
 				DA7D7DDE2C8094FB00CC258C /* ListIconView.swift in Sources */,
-				DA1F10D42C9AF163004A2AB0 /* SubheadingSection.swift in Sources */,
 				DA7D7DC82C80943600CC258C /* AddReminderView.swift in Sources */,
 				DA8213122C93326D00BC9B41 /* CustomButton.swift in Sources */,
 				DAB05C1D2C9D8BF400BAC0A0 /* SwipeableTaskDetailViewModel.swift in Sources */,
@@ -1003,6 +1005,7 @@
 				DA7EAB972C8CEB3D00F577E3 /* permissionsView.swift in Sources */,
 				DA3BFC382C9C1DAC00E16F05 /* Paywall.swift in Sources */,
 				DA7D7DD42C80949800CC258C /* NotesSheetView.swift in Sources */,
+				95E6375C2CC2BFC400B538DC /* DropViewDelegate.swift in Sources */,
 				DA1F10D82C9AF1B6004A2AB0 /* View+Extensions.swift in Sources */,
 				DA33C5032C987646002F2613 /* ListViewModel.swift in Sources */,
 				DA7D7DA32C8091D000CC258C /* AppearanceSettingsView.swift in Sources */,
@@ -1039,6 +1042,7 @@
 				DA7D7DDC2C8094EC00CC258C /* AddNewListView.swift in Sources */,
 				DAAB822B2C8B3A0F007605E4 /* AppDelegate.swift in Sources */,
 				DAD7957C2CB2774F00AD28FF /* InboxViewModel.swift in Sources */,
+				95E637242CBEC52200B538DC /* EmptyDropView.swift in Sources */,
 				DA7D7DB32C80928000CC258C /* TaskCardView.swift in Sources */,
 				DA7D7DE82C80955300CC258C /* ContentView.swift in Sources */,
 				DA07096E2C99E053002D1F35 /* ListDetailViewModel.swift in Sources */,

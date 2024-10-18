@@ -12,6 +12,8 @@ import HexagonData
 
 @MainActor
 public class ListDetailViewModel: ObservableObject {
+    
+    @Published var isDragging: Bool = false
     @Published public var subHeadings: [SubHeading] = []
     @Published public var reminders: [Reminder] = []
     @Published public var error: IdentifiableError?
@@ -67,9 +69,10 @@ public class ListDetailViewModel: ObservableObject {
             let fetchedSubHeadings = try await subheadingService.fetchSubHeadings(for: taskList)
             
             await MainActor.run {
-                self.reminders = fetchedReminders
-                self.subHeadings = fetchedSubHeadings
-                
+                withAnimation {
+                    self.reminders = fetchedReminders
+                    self.subHeadings = fetchedSubHeadings
+                }
                 print("Fetched \(fetchedSubHeadings.count) subheadings and \(fetchedReminders.count) reminders.")
                 fetchedSubHeadings.forEach { subHeading in
                     print("Subheading: \(subHeading.title ?? "Untitled")")
@@ -114,6 +117,22 @@ public class ListDetailViewModel: ObservableObject {
                 self.error = IdentifiableError(message: error.localizedDescription)
             }
             throw error
+        }
+    }
+    
+    public func saveDrop(reminders: [Reminder]) async -> Bool {
+        do {
+            try await context.perform {
+                try self.context.save()
+            }
+            self.isDragging = false
+            return true
+        } catch {
+            print("Error handling drop: \(error)")
+            await MainActor.run {
+                self.error = IdentifiableError(message: error.localizedDescription)
+            }
+            return false
         }
     }
     
