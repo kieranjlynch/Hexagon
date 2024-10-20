@@ -38,6 +38,7 @@ public final class PersistenceController {
         if inMemory {
             let description = NSPersistentStoreDescription()
             description.type = NSInMemoryStoreType
+            description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             persistentContainer.persistentStoreDescriptions = [description]
         } else {
             guard let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.klynch.Hexagon") else {
@@ -46,6 +47,7 @@ public final class PersistenceController {
             }
             let storeURL = appGroupURL.appendingPathComponent("HexagonModel.sqlite")
             let description = NSPersistentStoreDescription(url: storeURL)
+            description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             description.shouldMigrateStoreAutomatically = true
             description.shouldInferMappingModelAutomatically = true
             persistentContainer.persistentStoreDescriptions = [description]
@@ -62,6 +64,13 @@ public final class PersistenceController {
                 self.logger.debug("Store URL: \(storeDescription.url?.absoluteString ?? "unknown")")
                 self.persistentContainer.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
                 self.persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
+                
+                // Enable persistent history tracking
+                do {
+                    try self.persistentContainer.viewContext.setQueryGenerationFrom(.current)
+                } catch {
+                    self.logger.error("Failed to set query generation: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -129,5 +138,16 @@ public final class PersistenceController {
         let context = persistentContainer.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         return context
+    }
+
+    public func fetchPersistentHistory(since date: Date) throws -> [NSPersistentHistoryChange] {
+        let request = NSPersistentHistoryChangeRequest.fetchHistory(after: date)
+        let result = try persistentContainer.viewContext.execute(request) as? NSPersistentHistoryResult
+        return result?.result as? [NSPersistentHistoryChange] ?? []
+    }
+
+    public func deletePersistentHistory(before date: Date) throws {
+        let deleteHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: date)
+        try persistentContainer.viewContext.execute(deleteHistoryRequest)
     }
 }
