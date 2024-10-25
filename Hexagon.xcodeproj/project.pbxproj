@@ -43,14 +43,17 @@
 		DA3BFC582C9C372500E16F05 /* TaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */; };
 		DA3C39E42CB046F2001D1FF6 /* HexagonData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; };
 		DA4A07F42CA15C4000974DE6 /* IdentifiableError.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4A07F32CA15C3F00974DE6 /* IdentifiableError.swift */; };
+		DA4B5BC92CCBE84A00314EBE /* Reminder+Dragable.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4B5BC82CCBE84800314EBE /* Reminder+Dragable.swift */; };
+		DA4B5BCB2CCBF03500314EBE /* CustomSearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA4B5BCA2CCBF03300314EBE /* CustomSearchBar.swift */; };
 		DA5B3F3A2CA6C23900ECF757 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5B3F392CA6C23500ECF757 /* TimelineView.swift */; };
 		DA66720E2C944588002BF8FC /* VoiceNoteSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA66720D2C944588002BF8FC /* VoiceNoteSheetView.swift */; };
+		DA69714E2CC5B26A0050D108 /* SearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA69714D2CC5B2690050D108 /* SearchBar.swift */; };
+		DA72547B2CCACC4800112233 /* DragAndDrop in Frameworks */ = {isa = PBXBuildFile; productRef = DA72547A2CCACC4800112233 /* DragAndDrop */; };
 		DA7D7D4D2C808E3D00CC258C /* HexagonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D4C2C808E3D00CC258C /* HexagonApp.swift */; };
 		DA7D7D562C808E3E00CC258C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA7D7D552C808E3E00CC258C /* Assets.xcassets */; };
 		DA7D7D5A2C808E3E00CC258C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DA7D7D592C808E3E00CC258C /* Preview Assets.xcassets */; };
 		DA7D7D632C808ECF00CC258C /* SearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D622C808ECF00CC258C /* SearchResult.swift */; };
 		DA7D7D652C808EE500CC258C /* FilterType.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D642C808EE500CC258C /* FilterType.swift */; };
-		DA7D7D692C808F3400CC258C /* QueryParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D682C808F3400CC258C /* QueryParser.swift */; };
 		DA7D7D812C80907500CC258C /* CustomOperators.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D802C80907500CC258C /* CustomOperators.swift */; };
 		DA7D7D852C80909200CC258C /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D842C80909200CC258C /* ImagePicker.swift */; };
 		DA7D7D8D2C80910000CC258C /* AdvancedSearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7D7D8C2C80910000CC258C /* AdvancedSearchView.swift */; };
@@ -103,8 +106,10 @@
 		DAA89D572CB0269E00C8B913 /* HexagonWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DAAB822B2C8B3A0F007605E4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */; };
 		DAB05C1D2C9D8BF400BAC0A0 /* SwipeableTaskDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */; };
-		DAD7957A2CB2773F00AD28FF /* InboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD795792CB2773B00AD28FF /* InboxView.swift */; };
-		DAD7957C2CB2774F00AD28FF /* InboxViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD7957B2CB2774C00AD28FF /* InboxViewModel.swift */; };
+		DAB0F3672CC8EA67000464CF /* CustomNavigationTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB0F3662CC8EA61000464CF /* CustomNavigationTitle.swift */; };
+		DAB0F3692CC8EA84000464CF /* ListDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB0F3682CC8EA83000464CF /* ListDetailSheet.swift */; };
+		DAB0F36D2CC8ECAB000464CF /* ReminderToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB0F36A2CC8EBC0000464CF /* ReminderToken.swift */; };
+		DAB0F36F2CC8F028000464CF /* ReminderListContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB0F36E2CC8F01E000464CF /* ReminderListContent.swift */; };
 		DAE2AA062CA5AC6D0033F4DB /* HexagonData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; };
 		DAE2AA072CA5AC6D0033F4DB /* HexagonData.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DAE2AA142CA5B2000033F4DB /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DAE2AA132CA5B2000033F4DB /* UIKit.framework */; platformFilters = (ios, xros, ); };
@@ -213,10 +218,13 @@
 		DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailViewModel.swift; sourceTree = "<group>"; };
 		DA45A5C32CA572E2004B4E14 /* HexagonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HexagonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA4A07F32CA15C3F00974DE6 /* IdentifiableError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifiableError.swift; sourceTree = "<group>"; };
+		DA4B5BC82CCBE84800314EBE /* Reminder+Dragable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reminder+Dragable.swift"; sourceTree = "<group>"; };
+		DA4B5BCA2CCBF03300314EBE /* CustomSearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSearchBar.swift; sourceTree = "<group>"; };
 		DA5B3F392CA6C23500ECF757 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		DA6320432C9081D400E58414 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
 		DA6320452C9081D400E58414 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
 		DA66720D2C944588002BF8FC /* VoiceNoteSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceNoteSheetView.swift; sourceTree = "<group>"; };
+		DA69714D2CC5B2690050D108 /* SearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBar.swift; sourceTree = "<group>"; };
 		DA7D7D492C808E3D00CC258C /* Hexagon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Hexagon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA7D7D4C2C808E3D00CC258C /* HexagonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HexagonApp.swift; sourceTree = "<group>"; };
 		DA7D7D552C808E3E00CC258C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -224,7 +232,6 @@
 		DA7D7D592C808E3E00CC258C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		DA7D7D622C808ECF00CC258C /* SearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResult.swift; sourceTree = "<group>"; };
 		DA7D7D642C808EE500CC258C /* FilterType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterType.swift; sourceTree = "<group>"; };
-		DA7D7D682C808F3400CC258C /* QueryParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryParser.swift; sourceTree = "<group>"; };
 		DA7D7D802C80907500CC258C /* CustomOperators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomOperators.swift; sourceTree = "<group>"; };
 		DA7D7D842C80909200CC258C /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		DA7D7D8C2C80910000CC258C /* AdvancedSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSearchView.swift; sourceTree = "<group>"; };
@@ -276,8 +283,10 @@
 		DAA89D472CB0269D00C8B913 /* HexagonWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HexagonWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeableTaskDetailViewModel.swift; sourceTree = "<group>"; };
-		DAD795792CB2773B00AD28FF /* InboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxView.swift; sourceTree = "<group>"; };
-		DAD7957B2CB2774C00AD28FF /* InboxViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxViewModel.swift; sourceTree = "<group>"; };
+		DAB0F3662CC8EA61000464CF /* CustomNavigationTitle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomNavigationTitle.swift; sourceTree = "<group>"; };
+		DAB0F3682CC8EA83000464CF /* ListDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailSheet.swift; sourceTree = "<group>"; };
+		DAB0F36A2CC8EBC0000464CF /* ReminderToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderToken.swift; sourceTree = "<group>"; };
+		DAB0F36E2CC8F01E000464CF /* ReminderListContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderListContent.swift; sourceTree = "<group>"; };
 		DAE2AA002CA5AC6D0033F4DB /* HexagonData.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = HexagonData.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DAE2AA132CA5B2000033F4DB /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
@@ -336,6 +345,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DAE2AA062CA5AC6D0033F4DB /* HexagonData.framework in Frameworks */,
+				DA72547B2CCACC4800112233 /* DragAndDrop in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -363,7 +373,6 @@
 		DA33C4E52C986740002F2613 /* View_Models */ = {
 			isa = PBXGroup;
 			children = (
-				DAD7957B2CB2774C00AD28FF /* InboxViewModel.swift */,
 				DA28051B2CAEE2A70067601A /* TimelineViewModel.swift */,
 				DAB05C1C2C9D8BF100BAC0A0 /* SwipeableTaskDetailViewModel.swift */,
 				DA3BFC572C9C372200E16F05 /* TaskDetailViewModel.swift */,
@@ -391,7 +400,6 @@
 				DA1F10ED2C9B2142004A2AB0 /* ColorUtilities.swift */,
 				DA7D7D802C80907500CC258C /* CustomOperators.swift */,
 				DA981FDD2C91F99C00E17318 /* Constants.swift */,
-				DA7D7D682C808F3400CC258C /* QueryParser.swift */,
 				DA8138842C9ABFE7000DDCFF /* UIHelper.swift */,
 			);
 			path = Utilities;
@@ -410,7 +418,6 @@
 		DA3BFC432C9C290400E16F05 /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				DAD795792CB2773B00AD28FF /* InboxView.swift */,
 				DA5B3F382CA6C22E00ECF757 /* Timeline */,
 				DAB05C1B2C9D627600BAC0A0 /* Scheduling */,
 				DAB05C1A2C9D625900BAC0A0 /* Settings */,
@@ -434,6 +441,10 @@
 		DA3BFC442C9C291100E16F05 /* Lists */ = {
 			isa = PBXGroup;
 			children = (
+				DAB0F36E2CC8F01E000464CF /* ReminderListContent.swift */,
+				DAB0F36A2CC8EBC0000464CF /* ReminderToken.swift */,
+				DAB0F3682CC8EA83000464CF /* ListDetailSheet.swift */,
+				DAB0F3662CC8EA61000464CF /* CustomNavigationTitle.swift */,
 				DA7D7DB92C80934600CC258C /* ListCardView.swift */,
 				DA07096F2C99E9AC002D1F35 /* ListItemView.swift */,
 				DA7D7DDD2C8094FB00CC258C /* ListIconView.swift */,
@@ -517,6 +528,7 @@
 		DA3BFC4D2C9C299000E16F05 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				DA69714D2CC5B2690050D108 /* SearchBar.swift */,
 				DA33C4FE2C9869E7002F2613 /* ExpandedPhotoOverlayView.swift */,
 				DA7D7DBF2C8093BF00CC258C /* ZoomableScrollView.swift */,
 				DA33C4FC2C9868AF002F2613 /* ButtonRowView.swift */,
@@ -645,6 +657,8 @@
 		DA7D7D4B2C808E3D00CC258C /* Hexagon */ = {
 			isa = PBXGroup;
 			children = (
+				DA4B5BCA2CCBF03300314EBE /* CustomSearchBar.swift */,
+				DA4B5BC82CCBE84800314EBE /* Reminder+Dragable.swift */,
 				DA7D7E172C809E5D00CC258C /* Info.plist */,
 				DA7D7D4C2C808E3D00CC258C /* HexagonApp.swift */,
 				DAAB822A2C8B3A0F007605E4 /* AppDelegate.swift */,
@@ -897,6 +911,9 @@
 				Base,
 			);
 			mainGroup = DA7D7D402C808E3D00CC258C;
+			packageReferences = (
+				DA7254792CCACC4800112233 /* XCRemoteSwiftPackageReference "swiftui-drag-and-drop" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DA7D7D4A2C808E3D00CC258C /* Products */;
 			projectDirPath = "";
@@ -964,6 +981,7 @@
 				DA1F10EE2C9B2147004A2AB0 /* ColorUtilities.swift in Sources */,
 				DA7D7D932C80914000CC258C /* TaskScheduleView.swift in Sources */,
 				DA3BFC3A2C9C1E2600E16F05 /* SubscriptionManager.swift in Sources */,
+				DAB0F36F2CC8F028000464CF /* ReminderListContent.swift in Sources */,
 				DA33C4FD2C9868AF002F2613 /* ButtonRowView.swift in Sources */,
 				DA7D7DA92C8091FF00CC258C /* NotificationSettingsView.swift in Sources */,
 				DA7D7D4D2C808E3D00CC258C /* HexagonApp.swift in Sources */,
@@ -1012,10 +1030,10 @@
 				DA7D7DCA2C80944700CC258C /* NotificationSheetView.swift in Sources */,
 				DA1F10EB2C9B1CC3004A2AB0 /* AppSettings.swift in Sources */,
 				DA33C4EB2C9867D3002F2613 /* DateFieldsView.swift in Sources */,
-				DA7D7D692C808F3400CC258C /* QueryParser.swift in Sources */,
 				DA981FDE2C91F99C00E17318 /* Constants.swift in Sources */,
 				DA7D7D9B2C80918B00CC258C /* EventView.swift in Sources */,
 				DA7D7DB12C80926200CC258C /* FloatingActionButton.swift in Sources */,
+				DAB0F3672CC8EA67000464CF /* CustomNavigationTitle.swift in Sources */,
 				DA5B3F3A2CA6C23900ECF757 /* TimelineView.swift in Sources */,
 				DA28051C2CAEE2A80067601A /* TimelineViewModel.swift in Sources */,
 				DA7D7D972C80916000CC258C /* DateHeaderView.swift in Sources */,
@@ -1023,6 +1041,8 @@
 				DA4A07F42CA15C4000974DE6 /* IdentifiableError.swift in Sources */,
 				DA7D7DA72C8091F000CC258C /* DateSettingsView.swift in Sources */,
 				DA7D7DB52C80929200CC258C /* ColorPickerView.swift in Sources */,
+				DAB0F3692CC8EA84000464CF /* ListDetailSheet.swift in Sources */,
+				DA69714E2CC5B26A0050D108 /* SearchBar.swift in Sources */,
 				DA33C4ED2C98680A002F2613 /* ListFieldView.swift in Sources */,
 				DA7D7DE62C80953E00CC258C /* SwipeableTaskDetailView.swift in Sources */,
 				DA2805202CAEE2F80067601A /* TimelineModels.swift in Sources */,
@@ -1035,15 +1055,16 @@
 				DA7D7DD82C8094B700CC258C /* LinkSheetView.swift in Sources */,
 				DA7D7D8F2C80911A00CC258C /* FilterItem.swift in Sources */,
 				DA33C4FF2C9869E7002F2613 /* ExpandedPhotoOverlayView.swift in Sources */,
-				DAD7957A2CB2773F00AD28FF /* InboxView.swift in Sources */,
+				DA4B5BC92CCBE84A00314EBE /* Reminder+Dragable.swift in Sources */,
 				DA7D7DDC2C8094EC00CC258C /* AddNewListView.swift in Sources */,
 				DAAB822B2C8B3A0F007605E4 /* AppDelegate.swift in Sources */,
-				DAD7957C2CB2774F00AD28FF /* InboxViewModel.swift in Sources */,
+				DA4B5BCB2CCBF03500314EBE /* CustomSearchBar.swift in Sources */,
 				DA7D7DB32C80928000CC258C /* TaskCardView.swift in Sources */,
 				DA7D7DE82C80955300CC258C /* ContentView.swift in Sources */,
 				DA07096E2C99E053002D1F35 /* ListDetailViewModel.swift in Sources */,
 				DA1F10D22C9AF13B004A2AB0 /* ReminderRow.swift in Sources */,
 				DA7D7DA52C8091E200CC258C /* LayoutSettingsView.swift in Sources */,
+				DAB0F36D2CC8ECAB000464CF /* ReminderToken.swift in Sources */,
 				DA7D7DD22C80948300CC258C /* PhotosSheetView.swift in Sources */,
 				DA7D7DBA2C80934600CC258C /* ListCardView.swift in Sources */,
 				DA33C4E72C986760002F2613 /* AddReminderViewModel.swift in Sources */,
@@ -1588,6 +1609,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		DA7254792CCACC4800112233 /* XCRemoteSwiftPackageReference "swiftui-drag-and-drop" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hellojoelhuber/swiftui-drag-and-drop.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		DA72547A2CCACC4800112233 /* DragAndDrop */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DA7254792CCACC4800112233 /* XCRemoteSwiftPackageReference "swiftui-drag-and-drop" */;
+			productName = DragAndDrop;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DA7D7D412C808E3D00CC258C /* Project object */;
 }

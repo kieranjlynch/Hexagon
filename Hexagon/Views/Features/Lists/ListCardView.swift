@@ -96,6 +96,6 @@ struct ListCardView: View {
     }
 
     private func updateReminderCount() async {
-        reminderCount = await listService.getRemindersCountForList(taskList)
-    }
+            reminderCount = await listService.getRemindersCountForList(taskList)
+        }
 }

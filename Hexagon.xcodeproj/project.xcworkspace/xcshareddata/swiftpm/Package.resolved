@@ -1,0 +1,15 @@
+{
+  "originHash" : "9f3a599cb33d2dd2591e057b49adca1bb61472eefa61da57a905e0dad79bb86a",
+  "pins" : [
+    {
+      "identity" : "swiftui-drag-and-drop",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hellojoelhuber/swiftui-drag-and-drop.git",
+      "state" : {
+        "revision" : "99532a459dfac08a6b2641b45320ddcc756de76c",
+        "version" : "0.2.0"
+      }
+    }
+  ],
+  "version" : 3
+}

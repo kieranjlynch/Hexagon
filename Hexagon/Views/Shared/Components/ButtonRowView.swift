@@ -8,26 +8,23 @@
 import SwiftUI
 
 struct ButtonRowView: View {
-    var onCancel: () -> Void
-    var onSave: () -> Void
+    let isFormValid: Bool
+    let saveAction: () async -> Void
+    let dismissAction: () -> Void
+    var colorScheme: ColorScheme
     
     var body: some View {
         HStack {
-            Button(action: onCancel) {
-                Text("Cancel")
-                    .padding()
-                    .background(Color.gray)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-            }
-            Button(action: onSave) {
-                Text("Save")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-            }
+            CustomButton(title: "Cancel", action: dismissAction, style: .secondary)
+            
+            CustomButton(title: "Save", action: {
+                Task {
+                    await saveAction()
+                }
+            }, style: .primary)
+            .disabled(!isFormValid)
         }
         .padding()
+        .background(colorScheme == .dark ? Color.black : Color.white)
     }
 }

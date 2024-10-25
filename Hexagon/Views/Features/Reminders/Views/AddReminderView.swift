@@ -19,8 +19,8 @@ public struct AddReminderView: View {
     @AppStorage("preferredTaskType") private var preferredTaskType: String = "Tasks"
     public var onSave: ((Reminder, [String], [UIImage]) -> Void)?
     
-    public init(reminder: Reminder? = nil, onSave: ((Reminder, [String], [UIImage]) -> Void)? = nil) {
-        _viewModel = StateObject(wrappedValue: AddReminderViewModel(reminder: reminder))
+    public init(reminder: Reminder? = nil, defaultList: TaskList? = nil, onSave: ((Reminder, [String], [UIImage]) -> Void)? = nil) {
+        _viewModel = StateObject(wrappedValue: AddReminderViewModel(reminder: reminder, defaultList: defaultList))
         self.onSave = onSave
     }
     
@@ -64,9 +64,9 @@ public struct AddReminderView: View {
                 .scrollContentBackground(.hidden)
                 .adaptiveBackground()
                 
-                ButtonRow(
+                ButtonRowView(
                     isFormValid: viewModel.isFormValid,
-                    saveAction: { Task { await save() } },
+                    saveAction: { await save() },
                     dismissAction: { dismiss() },
                     colorScheme: colorScheme
                 )
@@ -123,31 +123,14 @@ public struct AddReminderView: View {
             viewModel.updatePhotos(updatedPhotos)
             NotificationCenter.default.post(name: .reminderAdded, object: nil)
             onSave?(savedReminder, updatedTags, updatedPhotos)
+            
+            if viewModel.selectedList != nil {
+               
+            }
+            
             dismiss()
         } catch {
             viewModel.errorMessage = error.localizedDescription
         }
-    }
-}
-
-struct ButtonRow: View {
-    let isFormValid: Bool
-    let saveAction: () async -> Void
-    let dismissAction: () -> Void
-    var colorScheme: ColorScheme
-    
-    var body: some View {
-        HStack {
-            CustomButton(title: "Cancel", action: dismissAction, style: .secondary)
-            
-            CustomButton(title: "Save", action: {
-                Task {
-                    await saveAction()
-                }
-            }, style: .primary)
-            .disabled(!isFormValid)
-        }
-        .padding()
-        .background(colorScheme == .dark ? Color.black : Color.white)
     }
 }

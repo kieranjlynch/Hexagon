@@ -7,16 +7,23 @@
 
 import Foundation
 import SwiftUI
-import HexagonData
 import CoreData
+import HexagonData
+import Combine
 
 class TimelineViewModel: ObservableObject {
     @Published var tasks: [TimelineTask] = []
-    @Published var taskLists: [HexagonData.TaskList] = []
-    @Published var selectedFilter: ListFilter = .all
+    @Published var taskLists: [TaskList] = []
+    @Published var selectedFilter: ListFilter = .all {
+        didSet {
+            applyFilter(selectedFilter)
+        }
+    }
     @Published var error: IdentifiableError?
     @Published var dateRange: [Date] = []
+    
     private var isStartDate = true
+    private var cancellables = Set<AnyCancellable>()  
     
     private let reminderService: ReminderService
     private let listService: ListService
@@ -24,12 +31,29 @@ class TimelineViewModel: ObservableObject {
     init(reminderService: ReminderService, listService: ListService) {
         self.reminderService = reminderService
         self.listService = listService
+
+        $tasks
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateDateRange()
+            }
+            .store(in: &cancellables)
+
+        $selectedFilter
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] filter in
+                self?.applyFilter(filter)
+            }
+            .store(in: &cancellables)
     }
     
+    // MARK: - Async/Await functions
+
     func loadInitialData() async {
-        await loadTasks()
-        await loadTaskLists()
-        updateDateRange()
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.loadTasks() }
+            group.addTask { await self.loadTaskLists() }
+        }
     }
     
     @MainActor
@@ -46,8 +70,6 @@ class TimelineViewModel: ObservableObject {
                     isCompleted: reminder.isCompleted
                 )
             }
-            applyFilter(selectedFilter)
-            updateDateRange()
         } catch {
             self.error = IdentifiableError(message: error.localizedDescription)
         }
@@ -61,6 +83,25 @@ class TimelineViewModel: ObservableObject {
             self.error = IdentifiableError(message: error.localizedDescription)
         }
     }
+
+    @MainActor
+    func toggleCompletion(_ task: TimelineTask) async {
+        do {
+            let context = reminderService.persistentContainer.viewContext
+            let fetchRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "reminderID == %@", task.id as CVarArg)
+            fetchRequest.fetchLimit = 1
+            
+            if let reminder = try await context.perform({ try fetchRequest.execute().first }) {
+                try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
+                await loadTasks()
+            }
+        } catch {
+            self.error = IdentifiableError(message: error.localizedDescription)
+        }
+    }
+    
+    // MARK: - Combine-driven logic for reactive UI updates
 
     var fullDateRange: [Date] {
         guard let firstDate = dateRange.first, let lastDate = dateRange.last else {
@@ -103,13 +144,7 @@ class TimelineViewModel: ObservableObject {
         self.dateRange = Array(uniqueDates).sorted()
     }
     
-    func filterTasks(by filter: ListFilter) {
-        self.selectedFilter = filter
-        updateDateRange()
-    }
-    
     func applyFilter(_ filter: ListFilter) {
-        self.selectedFilter = filter
         updateDateRange()
     }
     
@@ -121,23 +156,6 @@ class TimelineViewModel: ObservableObject {
             return tasks.filter { $0.list == nil }
         case .specificList(let list):
             return tasks.filter { $0.list?.listID == list.listID }
-        }
-    }
-    
-    @MainActor
-    func toggleCompletion(_ task: TimelineTask) async {
-        do {
-            let context = reminderService.persistentContainer.viewContext
-            let fetchRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "reminderID == %@", task.id as CVarArg)
-            fetchRequest.fetchLimit = 1
-            
-            if let reminder = try await context.perform({ try fetchRequest.execute().first }) {
-                try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
-                await loadTasks()
-            }
-        } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
         }
     }
 }

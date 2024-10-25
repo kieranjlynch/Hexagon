@@ -9,6 +9,39 @@ import SwiftUI
 import CoreData
 import HexagonData
 
+struct SearchResultsList: View {
+    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var reminderService: ReminderService
+    @EnvironmentObject var locationService: LocationService
+    let searchResults: [Reminder]
+    @Binding var selectedReminder: Reminder?
+    let onToggleCompletion: (Reminder) -> Void
+    
+    var body: some View {
+        List(searchResults, id: \.objectID) { reminder in
+            TaskCardView(
+                reminder: reminder,
+                viewModel: ListDetailViewModel(
+                    context: reminderService.persistentContainer.viewContext,
+                    taskList: reminder.list ?? TaskList(),
+                    reminderService: reminderService,
+                    locationService: locationService
+                ),
+                onTap: {
+                    selectedReminder = reminder
+                },
+                onToggleCompletion: {
+                    onToggleCompletion(reminder)
+                },
+                selectedDate: Date(),
+                selectedDuration: 60.0
+            )
+            .listRowSeparator(.hidden, edges: .all)
+        }
+        .listStyle(.plain)
+    }
+}
+
 public struct SavedFilter: Codable, Identifiable {
     public var id = UUID()
     public let name: String
@@ -30,35 +63,31 @@ public struct SearchView: View {
         NavigationStack {
             VStack {
                 searchField
-
                 searchControls
 
                 if let selectedSearch = viewModel.selectedSavedSearch {
                     searchSummary(for: selectedSearch)
                 }
 
-                if viewModel.searchResults.isEmpty, !viewModel.searchText.isEmpty {
+                if viewModel.searchResults.isEmpty && !viewModel.searchText.isEmpty {
                     ContentUnavailableView.search(text: viewModel.searchText)
                 } else {
-                    List(viewModel.searchResults, id: \.objectID) { reminder in
-                        TaskCardView(
-                            reminder: reminder,
-                            onTap: {
+                    SearchResultsList(
+                        searchResults: viewModel.searchResults,
+                        selectedReminder: Binding(
+                            get: { viewModel.selectedReminder },
+                            set: { newValue in
                                 Task { @MainActor in
-                                    viewModel.selectedReminder = reminder
+                                    viewModel.selectedReminder = newValue
                                 }
-                            },
-                            onToggleCompletion: {
-                                Task {
-                                    viewModel.toggleCompletion(for: reminder)
-                                }
-                            },
-                            selectedDate: Date(),
-                            selectedDuration: 60.0
-                        )
-                        .listRowSeparator(.hidden, edges: .all)
-                    }
-                    .listStyle(.plain)
+                            }
+                        ),
+                        onToggleCompletion: { reminder in
+                            Task {
+                                viewModel.toggleCompletion(for: reminder)
+                            }
+                        }
+                    )
                 }
             }
             .navigationTitle("Search")

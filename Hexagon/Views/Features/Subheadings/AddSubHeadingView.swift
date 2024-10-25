@@ -52,7 +52,7 @@ struct AddSubHeadingView: View {
     private func saveSubHeading() {
         Task {
             do {
-                let subheadingService = SubheadingService(context: context)
+                let subheadingService = SubheadingService()
                 let newSubHeading = try await subheadingService.saveSubHeading(
                     title: title,
                     taskList: taskList
@@ -69,7 +69,7 @@ struct AddSubHeadingView: View {
     private func fetchSubHeadingsCount() {
         Task {
             do {
-                let subheadingService = SubheadingService(context: context)
+                let subheadingService = SubheadingService()
                 subHeadingsCount = try await subheadingService.fetchSubHeadingsCount(for: taskList)
             } catch {
                 errorMessage = "Failed to fetch subheadings count: \(error.localizedDescription)"

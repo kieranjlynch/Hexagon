@@ -1,10 +1,3 @@
-    //
-    //  FilterItemView.swift
-    //  Hexagon
-    //
-    //  Created by Kieran Lynch on 29/08/2024.
-    //
-
 import SwiftUI
 import Foundation
 import HexagonData
@@ -14,36 +7,47 @@ struct FilterItemView: View {
     @Binding var item: FilterItem
     let onRemove: () -> Void
     let onGroup: () -> Void
-    @State private var tags: [Tag] = []
+    @State private var tags: [ReminderTag] = []
+    @State private var error: Error?
     @EnvironmentObject private var reminderService: ReminderService
     @EnvironmentObject private var tagService: TagService
 
     var body: some View {
-        HStack(spacing: 8) {
-            if item.openParen {
-                Text("(")
-                    .font(.title2)
-                    .adaptiveColors()
+        VStack {
+            HStack(spacing: 8) {
+                if item.openParen {
+                    Text("(")
+                        .font(.title2)
+                        .adaptiveColors()
+                }
+                
+                criteriaPicker
+                
+                criteriaView
+                
+                Spacer()
+                
+                actionButton(systemName: "text.badge.plus", action: onGroup, color: .blue)
+                actionButton(systemName: "minus.circle.fill", action: onRemove, color: .red)
+                
+                if item.closeParen {
+                    Text(")")
+                        .font(.title2)
+                        .adaptiveColors()
+                }
             }
+            .padding(.vertical, 4)
+            .adaptiveBackground()
             
-            criteriaPicker
-            
-            criteriaView
-            
-            Spacer()
-            
-            actionButton(systemName: "text.badge.plus", action: onGroup, color: .blue)
-            actionButton(systemName: "minus.circle.fill", action: onRemove, color: .red)
-            
-            if item.closeParen {
-                Text(")")
-                    .font(.title2)
-                    .adaptiveColors()
+            if let error = error {
+                Text("Error: \(error.localizedDescription)")
+                    .foregroundColor(.red)
+                    .font(.caption)
             }
         }
-        .padding(.vertical, 4)
-        .adaptiveBackground()
-        .task { await fetchTags() }
+        .task {
+            await fetchTags()
+        }
     }
     
     private var criteriaPicker: some View {
@@ -113,8 +117,10 @@ struct FilterItemView: View {
     private func fetchTags() async {
         do {
             tags = try await tagService.fetchTags()
+            error = nil  
         } catch {
-            print("Failed to fetch tags: \(error)")
+            self.error = error
+            print("Error fetching tags: \(error.localizedDescription)")
         }
     }
 }

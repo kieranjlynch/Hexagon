@@ -24,11 +24,17 @@ class ListViewModel: ObservableObject {
     init(context: NSManagedObjectContext, reminderService: ReminderService) {
         self.context = context
         self.reminderService = reminderService
-        self.subheadingService = SubheadingService(context: context)
-        
+        self.subheadingService = SubheadingService()
         Task {
             await self.loadTaskLists()
         }
+    }
+    
+    func getIncompleteRemindersCount(for taskList: TaskList) -> Int {
+        guard let reminders = taskList.reminders?.allObjects as? [Reminder] else {
+            return 0
+        }
+        return reminders.filter { !$0.isCompleted }.count
     }
     
     func loadTaskLists() async {
@@ -40,12 +46,11 @@ class ListViewModel: ObservableObject {
     }
     
     func fetchSubHeadings(for taskList: TaskList?) async {
+        guard let taskList = taskList else {
+            return
+        }
         do {
-            if let taskList = taskList {
-                subHeadings = try await subheadingService.fetchSubHeadings(for: taskList)
-            } else {
-                print("TaskList is nil, cannot fetch subheadings.")
-            }
+            subHeadings = try await subheadingService.fetchSubHeadings(for: taskList)
         } catch {
             print("Error fetching subheadings: \(error)")
         }
@@ -53,10 +58,8 @@ class ListViewModel: ObservableObject {
     
     func addSubHeading(title: String, to taskList: TaskList?) async {
         guard let taskList = taskList else {
-            print("Error: TaskList is nil, cannot add subheading.")
             return
         }
-        
         do {
             _ = try await subheadingService.saveSubHeading(title: title, taskList: taskList)
             await fetchSubHeadings(for: taskList)
@@ -83,14 +86,21 @@ class ListViewModel: ObservableObject {
         }
     }
     
+    func deleteTaskList(_ taskList: TaskList) async {
+        do {
+            try await listService.deleteTaskList(taskList)
+            await loadTaskLists()
+        } catch {
+            print("Error deleting task list: \(error)")
+        }
+    }
+    
     func moveSubHeadings(from source: IndexSet, to destination: Int) async {
         var revisedSubHeadings = subHeadings
         revisedSubHeadings.move(fromOffsets: source, toOffset: destination)
-        
         for (index, subHeading) in revisedSubHeadings.enumerated() {
             subHeading.order = Int16(index)
         }
-        
         do {
             try await subheadingService.reorderSubHeadings(revisedSubHeadings)
             subHeadings = revisedSubHeadings
@@ -101,14 +111,11 @@ class ListViewModel: ObservableObject {
     
     func moveReminders(from source: IndexSet, to destination: Int, in subHeading: SubHeading) async {
         guard let remindersSet = subHeading.reminders as? Set<Reminder> else { return }
-        
         var revisedReminders = remindersSet.sorted { $0.order < $1.order }
         revisedReminders.move(fromOffsets: source, toOffset: destination)
-        
         for (index, reminder) in revisedReminders.enumerated() {
             reminder.order = Int16(index)
         }
-        
         do {
             try await reminderService.reorderReminders(revisedReminders)
         } catch {

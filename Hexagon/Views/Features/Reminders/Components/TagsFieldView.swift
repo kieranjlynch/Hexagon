@@ -9,7 +9,7 @@ import SwiftUI
 import HexagonData
 
 struct TagsFieldView: View {
-    @Binding var selectedTags: Set<Tag>
+    @Binding var selectedTags: Set<ReminderTag>
     var colorScheme: ColorScheme
     
     var body: some View {

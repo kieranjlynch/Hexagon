@@ -1,10 +1,3 @@
-//
-//  TagsSheetView.swift
-//  Hexagon
-//
-//  Created by Kieran Lynch on 29/08/2024.
-//
-
 import SwiftUI
 import CoreData
 import os
@@ -13,8 +6,8 @@ import HexagonData
 struct TagsSheetView: View {
     @Environment(\.appTintColor) var appTintColor
     @Environment(\.colorScheme) var colorScheme
-    @State private var tags: [Tag] = []
-    @Binding var selectedTags: Set<Tag>
+    @State private var tags: [ReminderTag] = []
+    @Binding var selectedTags: Set<ReminderTag>
     @State private var isShowingNewTagAlert = false
     @State private var newTagName = ""
     @EnvironmentObject private var reminderService: ReminderService
@@ -24,7 +17,7 @@ struct TagsSheetView: View {
     
     private let tagService: TagService
     
-    init(selectedTags: Binding<Set<Tag>>) {
+    init(selectedTags: Binding<Set<ReminderTag>>) {
         self._selectedTags = selectedTags
         self.tagService = TagService()
     }
@@ -57,7 +50,7 @@ struct TagsSheetView: View {
         .errorAlert(errorMessage: $errorMessage)
     }
     
-    private func toggleTag(_ tag: Tag) {
+    private func toggleTag(_ tag: ReminderTag) {
         if selectedTags.contains(tag) {
             selectedTags.remove(tag)
         } else {
@@ -83,8 +76,7 @@ struct TagsSheetView: View {
             tags = try await tagService.fetchTags()
         } catch {
             logger.error("Failed to fetch tags: \(error)")
-            errorMessage = "Unable to load tags. Please try again."
-            tags = []
+            errorMessage = "Failed to fetch tags: \(error.localizedDescription)"
         }
     }
 }

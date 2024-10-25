@@ -1,10 +1,3 @@
-//
-//  PersistenceController.swift
-//  Hexagon
-//
-//  Created by Kieran Lynch on 29/08/2024.
-//
-
 import Foundation
 import CoreData
 import os
@@ -64,8 +57,7 @@ public final class PersistenceController {
                 self.logger.debug("Store URL: \(storeDescription.url?.absoluteString ?? "unknown")")
                 self.persistentContainer.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
                 self.persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
-                
-                // Enable persistent history tracking
+
                 do {
                     try self.persistentContainer.viewContext.setQueryGenerationFrom(.current)
                 } catch {

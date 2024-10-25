@@ -20,19 +20,23 @@ public class PhotoService {
     }
     
     public func setReminderPhotos(reminderToSave: Reminder, photos: [UIImage], context: NSManagedObjectContext) async throws {
-        if let existingPhotos = reminderToSave.photos {
-            for case let photo as ReminderPhoto in existingPhotos {
-                context.delete(photo)
+        await context.perform {
+            if let existingPhotos = reminderToSave.photos {
+                for case let photo as ReminderPhoto in existingPhotos {
+                    context.delete(photo)
+                }
+                reminderToSave.photos = nil
             }
-            reminderToSave.photos = nil
+            
+            let reminderPhotos = photos.map { photo -> ReminderPhoto in
+                let reminderPhoto = ReminderPhoto(context: context)
+                reminderPhoto.photoData = photo.pngData()
+                return reminderPhoto
+            }
+            reminderToSave.photos = NSSet(array: reminderPhotos)
         }
         
-        let reminderPhotos = photos.map { photo -> ReminderPhoto in
-            let reminderPhoto = ReminderPhoto(context: context)
-            reminderPhoto.photoData = photo.pngData()
-            return reminderPhoto
-        }
-        reminderToSave.photos = NSSet(array: reminderPhotos)
+        try context.save();
     }
     
     public func getPhotos(for reminder: Reminder) -> [UIImage] {

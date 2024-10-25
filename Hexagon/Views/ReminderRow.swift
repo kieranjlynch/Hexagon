@@ -1,9 +1,9 @@
-    //
-    //  ReminderRow.swift
-    //  Hexagon
-    //
-    //  Created by Kieran Lynch on 18/09/2024.
-    //
+//
+//  ReminderRow.swift
+//  Hexagon
+//
+//  Created by Kieran Lynch on 18/09/2024.
+//
 
 import SwiftUI
 import CoreData
@@ -23,6 +23,7 @@ struct ReminderRow: View {
     var body: some View {
         TaskCardView(
             reminder: reminder,
+            viewModel: viewModel,  
             onTap: {
                 currentReminderIndex = viewModel.reminders.firstIndex(of: reminder) ?? 0
                 showSwipeableTaskDetail = true
@@ -35,8 +36,6 @@ struct ReminderRow: View {
             selectedDate: Date(),
             selectedDuration: 60.0
         )
-        .draggable(reminder)
-        .droppableReminder(to: Optional<SubHeading>.none)
         .fullScreenCover(isPresented: $showSwipeableTaskDetail) {
             SwipeableTaskDetailView(reminders: $viewModel.reminders, currentIndex: $currentReminderIndex)
                 .environmentObject(reminderService)

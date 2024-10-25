@@ -8,18 +8,21 @@
 import SwiftUI
 import EventKit
 import HexagonData
+import DragAndDrop
 
 struct TaskCardView: View {
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject private var reminderService: ReminderService
     let reminder: Reminder
+    let viewModel: ListDetailViewModel
     let onTap: () -> Void
     let onToggleCompletion: () -> Void
     let selectedDate: Date
     let selectedDuration: Double
 
     @State private var isTogglingCompletion = false
+    @State private var isDragging = false
 
     var body: some View {
         HStack {
@@ -30,8 +33,21 @@ struct TaskCardView: View {
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
         .cardStyle()
+        .dragable(
+                    object: reminder,
+                    onDragObject: { reminder, position in
+                        isDragging = true
+                        viewModel.setDraggingReminder(true)
+                        return viewModel.onDraggedReminder(reminder: reminder, position: position)
+                    },
+            onDropped: { position in
+                isDragging = false
+                viewModel.setDraggingReminder(false)
+                return viewModel.onDroppedReminder(reminder: reminder, position: position)
+            }
+        )
+        .opacity(isDragging ? 0.5 : 1.0)
         .onTapGesture(perform: onTap)
-        .draggable(reminder)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(reminder.title ?? "Untitled Task")
         .accessibilityHint("Double-tap for more options")

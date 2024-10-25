@@ -2,131 +2,98 @@
 //  ListDetailView.swift
 //  Hexagon
 //
-//  Created by Kieran Lynch on 29/08/2024.
+//  Created by Kieran Lynch on 17/09/2024.
 //
 
 import SwiftUI
-import CoreData
-import UniformTypeIdentifiers
 import HexagonData
+import CoreData
+import TipKit
+import os
+import DragAndDrop
 
 struct ListDetailView: View {
-    @Environment(\.managedObjectContext) var context
-    @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var viewModel: ListDetailViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     @EnvironmentObject var reminderService: ReminderService
-    @Binding var selectedListID: NSManagedObjectID?
-    @StateObject var viewModel: ListDetailViewModel
     @EnvironmentObject var locationService: LocationService
-    @State private var selectedReminder: Reminder?
-    @State private var refreshID = UUID()
-    @State private var isPerformingDrop = false
-    @State private var dropFeedback: IdentifiableError?
+    @EnvironmentObject var listService: ListService
+    @StateObject private var searchViewModel = SearchViewModel()
+    
+    @Binding var showFloatingActionButtonTip: Bool
+    
+    let floatingActionButtonTip: FloatingActionButtonTip
+    
     @State private var showAddReminderView = false
     @State private var showAddSubHeadingView = false
-    @State private var selectedIndex: Int = 0
-    @State private var showSwipeableDetailView = false
+    @State private var showSwipeableTaskDetail = false
+    @State private var currentReminderIndex = 0
+    @State private var currentTokens = [ReminderToken]()
+    @State private var availableTags: [ReminderTag] = []
+    @State private var isEditing = false
+    
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.klynch.Hexagon",
+        category: "ListDetailView"
+    )
     
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
-                    unassignedRemindersSection
-                    subheadingsSection
+                    CustomSearchBar(searchText: $searchViewModel.searchText, isEditing: $isEditing, onCommit: {
+                        Task {
+                            await searchViewModel.performSearch()
+                        }
+                    })
+                    .padding([.horizontal, .top], 8)
+                    
+                    ReminderListContent(
+                        viewModel: viewModel,
+                        currentReminderIndex: $currentReminderIndex,
+                        showSwipeableTaskDetail: $showSwipeableTaskDetail,
+                        searchText: searchViewModel.searchText,
+                        currentTokens: currentTokens
+                    )
                 }
                 .padding(.horizontal)
+                
+                FloatingActionButton(
+                    appSettings: appSettings,
+                    showTip: $showFloatingActionButtonTip,
+                    tip: floatingActionButtonTip,
+                    menuItems: [.addReminder, .addSubHeading],
+                    onMenuItemSelected: { item in
+                        switch item {
+                        case .addReminder:
+                            showAddReminderView = true
+                        case .addSubHeading:
+                            showAddSubHeadingView = true
+                        default:
+                            break
+                        }
+                    }
+                )
+                .padding([.trailing, .bottom], 16)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    HStack(spacing: 8) {
-                        Image(systemName: viewModel.listSymbol)
-                            .foregroundColor(Color(UIColor.color(data: viewModel.taskList.colorData ?? Data()) ?? .gray))
-                        Text(viewModel.taskList.name ?? "Unnamed List")
-                            .font(.headline)
-                    }
+                    CustomNavigationTitle(taskList: viewModel.taskList)
                 }
             }
-            .task {
-                await viewModel.loadContent()
+            .onAppear {
+                logger.info("ListDetailView appeared for list: \(viewModel.taskList.name ?? "Unknown")")
+                Task {
+                    await fetchData()
+                }
+                viewModel.setupSearchViewModel(searchViewModel)
             }
-            .onChange(of: viewModel.reminders) {
-                handleReminderChange()
-            }
-            .fullScreenCover(isPresented: $showSwipeableDetailView) {
-                SwipeableTaskDetailViewWrapper(
-                    reminders: $viewModel.reminders,
-                    currentIndex: $selectedIndex
-                )
-                .environmentObject(reminderService)
-            }
-            .overlay(alignment: .bottomTrailing) {
-                floatingActionButton
-            }
-            .alert(item: $viewModel.error) { identifiableError in
-                Alert(
-                    title: Text("Error"),
-                    message: Text(identifiableError.message)
-                )
-            }
+            .onChange(of: viewModel.reminders) { onRemindersChange($1) }
+            .onChange(of: viewModel.subHeadings) { onSubHeadingsChange($1) }
         }
-    }
-    
-    private var unassignedRemindersSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(viewModel.reminders.filter { $0.subHeading == nil }, id: \.self) { reminder in
-                TaskCardView(
-                    reminder: reminder,
-                    onTap: {
-                        if let index = viewModel.reminders.firstIndex(of: reminder) {
-                            selectedIndex = index
-                            selectedReminder = reminder
-                            showSwipeableDetailView = true
-                        }
-                    },
-                    onToggleCompletion: {
-                        Task {
-                            await viewModel.toggleCompletion(reminder)
-                        }
-                    },
-                    selectedDate: Date(),
-                    selectedDuration: 60.0
-                )
-                .background(Color(UIColor.systemBackground))
-                .cornerRadius(8)
-                .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                .draggable(reminder)
-            }
-            .padding(.top, 8)
-        }
-    }
-    
-    private var subheadingsSection: some View {
-        ForEach(viewModel.subHeadings, id: \.objectID) { subHeading in
-            SubheadingSection(subHeading: subHeading, viewModel: viewModel)
-        }
-    }
-    
-    private var floatingActionButton: some View {
-        FloatingActionButton(
-            appSettings: AppSettings(),
-            showTip: .constant(false),
-            tip: EmptyTip(),
-            menuItems: [.addSubHeading, .addReminder]
-        ) { selectedItem in
-            switch selectedItem {
-            case .addReminder:
-                showAddReminderView = true
-                
-            case .addSubHeading:
-                showAddSubHeadingView = true
-                
-            default:
-                break
-            }
-        }
-        .padding([.trailing, .bottom], 16)
         .sheet(isPresented: $showAddReminderView) {
-            AddReminderView()
+            AddReminderView(defaultList: viewModel.taskList)
                 .environmentObject(reminderService)
                 .environmentObject(locationService)
         }
@@ -138,13 +105,44 @@ struct ListDetailView: View {
                         await viewModel.loadContent()
                     }
                 },
-                context: context
+                context: viewModel.context
             )
-            .environmentObject(reminderService)
+        }
+        .fullScreenCover(isPresented: $showSwipeableTaskDetail) {
+            SwipeableTaskDetailViewWrapper(
+                reminders: $viewModel.reminders,
+                currentIndex: $currentReminderIndex
+            )
         }
     }
     
-    private func handleReminderChange() {
-        print("Reminders updated in ListDetailView: \(viewModel.reminders.count)")
+    private func toggleReminderCompletion(_ reminder: Reminder) {
+        Task {
+            await viewModel.toggleCompletion(reminder)
+        }
+    }
+    
+    private func fetchData() async {
+        logger.debug("Starting to fetch reminders and subheadings")
+        await viewModel.loadContent()
+        await fetchTags()
+        logger.debug("Finished fetching reminders and subheadings")
+        logger.info("Reminders count: \(viewModel.reminders.count), SubHeadings count: \(viewModel.subHeadings.count)")
+    }
+    
+    private func fetchTags() async {
+        do {
+            availableTags = try await TagService.shared.fetchTags()
+        } catch {
+            logger.error("Failed to fetch tags: \(error.localizedDescription)")
+        }
+    }
+    
+    private func onRemindersChange(_ newReminders: [Reminder]) {
+        logger.info("Reminders updated. New count: \(newReminders.count)")
+    }
+    
+    private func onSubHeadingsChange(_ newSubHeadings: [SubHeading]) {
+        logger.info("SubHeadings updated. New count: \(newSubHeadings.count)")
     }
 }

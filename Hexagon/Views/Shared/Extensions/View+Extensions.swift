@@ -154,12 +154,6 @@ extension View {
         .padding(.vertical, Constants.UI.buttonVerticalPadding)
     }
     
-    func droppableReminder(to subHeading: SubHeading?) -> some View {
-        self.onDrop(of: [UTType.text], isTargeted: nil) { providers in
-            return true
-        }
-    }
-    
     func adaptiveSectionHeader(title: String) -> some View {
         Text(title)
             .foregroundColor(Color.primary)
@@ -196,10 +190,6 @@ extension View {
         self.cornerRadius(8)
             .adaptiveBackground()
             .adaptiveShadow()
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-            )
     }
     
     func dateNavButton(systemName: String, action: @escaping () -> Void) -> some View {
@@ -250,12 +240,6 @@ extension View {
             Toggle("", isOn: isOn)
         }
         .foregroundColor(Color.primary)
-    }
-    
-    func droppableSubheading(to taskList: TaskList) -> some View {
-        self.onDrop(of: [UTType.text], isTargeted: nil) { providers in
-            return true
-        }
     }
     
     func adaptiveToolbarBackground() -> some View {

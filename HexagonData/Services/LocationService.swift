@@ -127,10 +127,11 @@ public class LocationService: NSObject, ObservableObject, CLLocationManagerDeleg
     
     public func startMonitoringLocation(for reminder: Reminder) {
         guard let location = reminder.location else { return }
+        let radius = reminder.radius
         
         let region = CLCircularRegion(
             center: CLLocationCoordinate2D(latitude: location.latitude, longitude: location.longitude),
-            radius: reminder.radius,
+            radius: radius,
             identifier: reminder.reminderID?.uuidString ?? UUID().uuidString
         )
         region.notifyOnEntry = true

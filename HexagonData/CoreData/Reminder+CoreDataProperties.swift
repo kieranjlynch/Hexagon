@@ -2,7 +2,7 @@
 //  Reminder+CoreDataProperties.swift
 //  HexagonData
 //
-//  Created by Kieran Lynch on 06/10/2024.
+//  Created by Kieran Lynch on 20/10/2024.
 //
 //
 
@@ -60,10 +60,10 @@ extension Reminder {
 extension Reminder {
 
     @objc(addTagsObject:)
-    @NSManaged public func addToTags(_ value: Tag)
+    @NSManaged public func addToTags(_ value: ReminderTag)
 
     @objc(removeTagsObject:)
-    @NSManaged public func removeFromTags(_ value: Tag)
+    @NSManaged public func removeFromTags(_ value: ReminderTag)
 
     @objc(addTags:)
     @NSManaged public func addToTags(_ values: NSSet)

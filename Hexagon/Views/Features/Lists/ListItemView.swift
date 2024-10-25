@@ -8,21 +8,26 @@
 import SwiftUI
 import CoreData
 import HexagonData
+import TipKit
 
 struct ListItemView: View {
     let taskList: TaskList
     @Binding var selectedListID: NSManagedObjectID?
     var onDelete: () -> Void
     @State private var showEditView = false
+    @State private var showFloatingActionButtonTip = true
     @Environment(\.managedObjectContext) var context
     @EnvironmentObject var reminderService: ReminderService
     @ObservedObject var viewModel: ListDetailViewModel
-
+    
+    private let floatingActionButtonTip = FloatingActionButtonTip()
+    
     var body: some View {
         NavigationLink(
             destination: ListDetailView(
-                selectedListID: $selectedListID,
-                viewModel: viewModel
+                viewModel: viewModel,
+                showFloatingActionButtonTip: $showFloatingActionButtonTip,
+                floatingActionButtonTip: floatingActionButtonTip
             )
         ) {
             ListCardView(

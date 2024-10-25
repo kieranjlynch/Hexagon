@@ -4,7 +4,6 @@
 //
 //  Created by Kieran Lynch on 16/09/2024.
 //
-
 import Foundation
 import CoreData
 import os
@@ -22,7 +21,7 @@ public class ReminderService: ObservableObject {
         calendarService: CalendarService.shared,
         photoService: PhotoService.shared,
         locationService: LocationService(),
-        subheadingService: SubheadingService(context: PersistenceController.shared.persistentContainer.viewContext)
+        subheadingService: SubheadingService()
     )
     
     public let persistentContainer: NSPersistentContainer
@@ -77,7 +76,7 @@ public class ReminderService: ObservableObject {
         priority: Int16,
         list: TaskList?,
         subHeading: SubHeading?,
-        tags: Set<Tag>,
+        tags: Set<ReminderTag>,
         photos: [UIImage],
         notifications: Set<String>,
         location: CLLocationCoordinate2D?,
@@ -115,7 +114,7 @@ public class ReminderService: ObservableObject {
                     
                     try self.persistentContainer.viewContext.save()
                     
-                    self.logger.info("Saved reminder: id=\(reminderToSave.reminderID?.uuidString ?? "unknown"), title=\(reminderToSave.title ?? ""), isInInbox=\(reminderToSave.isInInbox), list=\(reminderToSave.list?.name ?? "No List"), isCompleted=\(reminderToSave.isCompleted)")
+                    self.logger.info("Saved reminder: id=\(reminderToSave.reminderID?.uuidString ?? "unknown"), title=\(reminderToSave.title ?? ""), list=\(reminderToSave.list?.name ?? "No List"), isCompleted=\(reminderToSave.isCompleted)")
                     
                     continuation.resume(returning: reminderToSave)
                 } catch {
@@ -163,12 +162,6 @@ public class ReminderService: ObservableObject {
         return reminder
     }
     
-    public func fetchUnassignedAndIncompleteReminders() async throws -> [Reminder] {
-        return try await fetchReminders(
-            withPredicate: "(isInInbox == YES OR list == nil) AND (isCompleted == NO OR isCompleted == nil)"
-        )
-    }
-    
     public func getRemindersForList(_ list: TaskList) async throws -> [Reminder] {
         return try await fetchReminders(
             withPredicate: "list == %@",
@@ -205,11 +198,16 @@ public class ReminderService: ObservableObject {
     public func deleteReminder(_ reminder: Reminder) async throws {
         logger.info("Deleting reminder: id=\(reminder.reminderID?.uuidString ?? "unknown"), title=\(reminder.title ?? "")")
         let context = persistentContainer.viewContext
-        try await context.perform {
+        try await context.perform { [self] in
             context.delete(reminder)
-            try context.save()
+            do {
+                try context.save()
+            } catch {
+                logger.error("Failed to delete reminder: \(error.localizedDescription)")
+                context.rollback()
+                throw error
+            }
         }
-        
         await refreshReminders()
     }
     
@@ -252,7 +250,7 @@ public class ReminderService: ObservableObject {
         priority: Int16,
         list: TaskList?,
         subHeading: SubHeading?,
-        tags: Set<Tag>,
+        tags: Set<ReminderTag>,
         notifications: Set<String>
     ) {
         reminderToSave.title = title
@@ -272,8 +270,6 @@ public class ReminderService: ObservableObject {
         } else {
             reminderToSave.endDate = nil
         }
-        
-        reminderToSave.isInInbox = (list == nil)
     }
     
     private func handleReminderPhotos(reminderToSave: Reminder, photos: [UIImage]) {
