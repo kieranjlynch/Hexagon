@@ -22,6 +22,7 @@ struct VoiceNoteFieldView: View {
             }
             .foregroundColor(colorScheme == .dark ? .white : .black)
         }
+        .buttonStyle(PlainButtonStyle())
         Spacer()
         if voiceNoteData != nil {
             Image(systemName: "checkmark")

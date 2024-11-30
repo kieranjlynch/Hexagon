@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.widgetkit-extension</string>
+    </dict>
+    <key>CFBundleDisplayName</key>
+    <string>HexWidget</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2024 Kieran Lynch. All rights reserved.</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.klynch.Hexagon.HexWidget</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>HexWidget</string>
+    <key>CFBundlePackageType</key>
+    <string>XPC!</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.klynch.Hexagon</string>
+    </array>
+    <key>Supported Intents</key>
+    <array>
+        <string>ConfigurationAppIntent</string>
+    </array>
+</dict>
+</plist>

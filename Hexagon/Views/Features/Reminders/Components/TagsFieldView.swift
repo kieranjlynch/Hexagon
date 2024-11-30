@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import HexagonData
+
 
 struct TagsFieldView: View {
     @Binding var selectedTags: Set<ReminderTag>
@@ -25,6 +25,7 @@ struct TagsFieldView: View {
                     }
                     .foregroundColor(colorScheme == .dark ? .white : .black)
                 }
+                .buttonStyle(PlainButtonStyle())
                 Spacer()
             }
             if !selectedTags.isEmpty {

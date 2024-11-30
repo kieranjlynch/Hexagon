@@ -23,6 +23,7 @@ struct PriorityFieldView: View {
                 }
                 .foregroundColor(colorScheme == .dark ? .white : .black)
             }
+            .buttonStyle(PlainButtonStyle())
             Spacer()
             if priority != 0 {
                 Text(priorityText(priority: priority))

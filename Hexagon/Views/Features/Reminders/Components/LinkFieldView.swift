@@ -10,9 +10,6 @@ import SwiftUI
 struct LinkFieldView: View {
     @Binding var url: String
     var colorScheme: ColorScheme
-    @Environment(\.openURL) var openURL
-    @State private var showAlert: Bool = false
-    @State private var alertMessage: String = ""
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -25,6 +22,7 @@ struct LinkFieldView: View {
                     }
                     .foregroundColor(colorScheme == .dark ? .white : .black)
                 }
+                .buttonStyle(PlainButtonStyle())
 
                 Spacer()
             }
@@ -36,32 +34,16 @@ struct LinkFieldView: View {
                    let scheme = urlLink.scheme?.lowercased(),
                    (scheme == "http" || scheme == "https"),
                    urlLink.host != nil {
-                    
-                    Button(action: {
-                        openURL(urlLink) { accepted in
-                            if !accepted {
-                                alertMessage = "Failed to open the URL."
-                                showAlert = true
-                            }
-                        }
-                    }) {
-                        Text(url)
-                            .foregroundColor(.blue)
-                            .underline()
-                            .lineLimit(1)
-                    }
-                    .padding(.horizontal)
+                    Text(url)
+                        .foregroundColor(.blue)
+                        .lineLimit(1)
+                        .padding(.horizontal)
                 } else {
                     Text("Invalid URL")
                         .foregroundColor(.red)
                         .padding(.horizontal)
                 }
             }
-        }
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Error"),
-                  message: Text(alertMessage),
-                  dismissButton: .default(Text("OK")))
         }
     }
 }

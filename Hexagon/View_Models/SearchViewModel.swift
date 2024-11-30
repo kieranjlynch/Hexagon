@@ -5,166 +5,240 @@
 //  Created by Kieran Lynch on 18/09/2024.
 //
 
+import Foundation
 import SwiftUI
 import CoreData
-import HexagonData
+import Combine
+import os
+
+struct PredicateWrapper: @unchecked Sendable {
+    var predicate: NSPredicate
+}
+
+struct SearchState: Equatable {
+    var searchText: String = ""
+    var tokens: [ReminderToken] = []
+    var selectedReminder: Reminder?
+    var searchResults: [Reminder] = []
+    
+    static func == (lhs: SearchState, rhs: SearchState) -> Bool {
+        lhs.searchText == rhs.searchText &&
+        lhs.tokens == rhs.tokens &&
+        lhs.searchResults.count == rhs.searchResults.count
+    }
+}
+
 
 @MainActor
-public class SearchViewModel: ObservableObject {
-    @Published public var searchText: String = ""
-    @Published public var selectedReminder: Reminder?
-    @Published public var showingAdvancedSearchView = false
-    @Published public var selectedSavedSearch: SavedFilter?
-    @Published public var searchResults: [Reminder] = []
-    @Published public var filterItems: [FilterItem] = []
-    @Published public var savedFilters: [SavedFilter] = []
-    @Published public var selectedSearchScope: String = "All"
+final class SearchViewModel: ObservableObject, ViewModel {
+    // MARK: - Published Properties
+    @Published private(set) var viewState: ViewState<SearchState>
+    @Published var error: IdentifiableError?
     
-    private let initialSavedSearch: SavedFilter?
-    private var reminderService: ReminderService?
-    private var viewContext: NSManagedObjectContext?
+    // MARK: - ViewModel Protocol Properties
+    var activeTasks = Set<Task<Void, Never>>()
+    var cancellables = Set<AnyCancellable>()
     
-    public init(initialSavedSearch: SavedFilter? = nil) {
-        self.initialSavedSearch = initialSavedSearch
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "SearchViewModel")
+    
+    private let searchDataProvider: SearchDataProvider
+    private let resultsDebounceInterval: TimeInterval
+    private var basePredicate: PredicateWrapper?
+    private var isSearching = false
+    private var isInitialSearch = true
+    private var lastSearchTime = Date.distantPast
+    private var lastStateUpdate = Date()
+    private let minimumSearchInterval: TimeInterval = 0.5
+    private let minimumStateInterval: TimeInterval = 0.1
+    
+    init(
+        searchDataProvider: SearchDataProvider,
+        resultsDebounceInterval: TimeInterval = 0.3
+    ) {
+        self.searchDataProvider = searchDataProvider
+        self.resultsDebounceInterval = resultsDebounceInterval
+        self.viewState = .idle
+        setupSearchSubscription()
     }
     
-    public func setup(reminderService: ReminderService, viewContext: NSManagedObjectContext) {
-        self.reminderService = reminderService
-        self.viewContext = viewContext
-        Task { await loadInitialSearchData() }
+    func viewDidLoad() { }
+    
+    func viewWillAppear() { }
+    
+    func viewWillDisappear() { }
+    
+    // MARK: - Data Loading
+    func loadContent() async throws -> [Reminder] {
+        guard case .loaded(let state) = viewState else { return [] }
+        return try await searchDataProvider.performSearch(
+            text: state.searchText,
+            tokens: state.tokens,
+            basePredicate: basePredicate
+        )
     }
     
-    public func performSearch() async {
-        guard let viewContext = viewContext else { return }
-        do {
-            let predicate = self.buildSearchPredicate()
-            let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-            request.predicate = predicate
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \Reminder.title, ascending: true)]
-            
-            let fetchedReminders = try viewContext.fetch(request)
-            self.searchResults = fetchedReminders
-        } catch {
-            self.searchResults = []
+    func handleLoadedContent(_ results: [Reminder]) {
+        updateState { state in
+            state.searchResults = results
+        }
+        viewState = results.isEmpty ? .noResults : .results(getState())
+    }
+    
+    func handleLoadError(_ error: Error) {
+        self.error = IdentifiableError(error: error)
+        viewState = .error(error.localizedDescription)
+        logger.error("Search failed: \(error.localizedDescription)")
+    }
+    
+    // MARK: - State Management
+    private func updateState(_ update: (inout SearchState) -> Void) {
+        var newState = getState()
+        update(&newState)
+        viewState = .loaded(newState)
+    }
+    
+    private func getState() -> SearchState {
+        guard case .loaded(let state) = viewState else {
+            return SearchState()
+        }
+        return state
+    }
+    
+    // MARK: - Search Operations
+    func updateSearchText(_ text: String) {
+        updateState { state in
+            state.searchText = text
         }
     }
     
-    private func buildSearchPredicate() -> NSPredicate {
-        var predicates: [NSPredicate] = []
-        
-        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            predicates.append(NSPredicate(format: "title CONTAINS[cd] %@ OR notes CONTAINS[cd] %@", searchText, searchText))
-        }
-        
-        for item in filterItems {
-            switch item.criteria {
-            case .quote, .wildcard:
-                if let value = item.value {
-                    predicates.append(NSPredicate(format: "title CONTAINS[cd] %@ OR notes CONTAINS[cd] %@", value, value))
-                }
-            case .tag:
-                if let value = item.value {
-                    predicates.append(NSPredicate(format: "ANY tags.name ==[cd] %@", value))
-                }
-            case .before:
-                if let date = item.date {
-                    predicates.append(NSPredicate(format: "endDate <= %@", date as NSDate))
-                }
-            case .after:
-                if let date = item.date {
-                    predicates.append(NSPredicate(format: "startDate >= %@", date as NSDate))
-                }
-            case .priority:
-                if let value = item.value, let priority = Int16(value) {
-                    predicates.append(NSPredicate(format: "priority == %d", priority))
-                }
-            case .link:
-                predicates.append(NSPredicate(format: "url != nil AND url != ''"))
-            case .notifications:
-                predicates.append(NSPredicate(format: "notifications != nil AND notifications != ''"))
-            case .location:
-                predicates.append(NSPredicate(format: "location != nil"))
-            case .notes:
-                predicates.append(NSPredicate(format: "notes != nil AND notes != ''"))
-            case .photos:
-                predicates.append(NSPredicate(format: "photos.@count > 0"))
-            }
-        }
-        
-        if predicates.isEmpty {
-            return NSPredicate(value: true)
+    func updateBasePredicate(_ predicate: NSPredicate) async {
+        guard basePredicate?.predicate != predicate else { return }
+        basePredicate = PredicateWrapper(predicate: predicate)
+        if isInitialSearch {
+            isInitialSearch = false
+            await performInitialSearch()
         } else {
-            return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+            await performSearch()
         }
     }
     
-    public func loadSavedFilters() async {
-        if let data = UserDefaults.standard.data(forKey: "SavedFilters") {
-            do {
-                savedFilters = try JSONDecoder().decode([SavedFilter].self, from: data)
-            } catch {
-                savedFilters = []
+    func clearSearch() {
+        viewState = .loaded(SearchState())
+    }
+    
+    func selectReminder(_ reminder: Reminder?) {
+        updateState { state in
+            state.selectedReminder = reminder
+        }
+    }
+    
+    func updateTokens(_ tokens: [ReminderToken]) {
+        updateState { state in
+            state.tokens = tokens
+        }
+    }
+    
+    // MARK: - Private Methods
+    private func setupSearchSubscription() {
+        $viewState
+            .compactMap { viewState -> (String, [ReminderToken])? in
+                guard case .loaded(let state) = viewState else { return nil }
+                return (state.searchText, state.tokens)
             }
-        }
+            .debounce(for: .seconds(resultsDebounceInterval), scheduler: DispatchQueue.main)
+            .removeDuplicates { prev, current in
+                prev.0 == current.0 && prev.1 == current.1
+            }
+            .sink { [weak self] _, _ in
+                guard let self = self,
+                      !self.isSearching,
+                      !self.isInitialSearch,
+                      Date().timeIntervalSince(self.lastSearchTime) >= self.minimumSearchInterval
+                else { return }
+                
+                Task { @MainActor [weak self] in
+                    await self?.performSearch()
+                }
+            }
+            .store(in: &cancellables)
     }
     
-    public func loadSavedFilter(_ filter: SavedFilter) async {
-        filterItems = filter.items
-        selectedSavedSearch = filter
-        await performSearch()
-    }
-    
-    public func saveCurrentFilter(name: String) {
-        Task {
-            let newFilter = SavedFilter(name: name, items: filterItems)
-            savedFilters.append(newFilter)
-            await saveSavedFilters()
-        }
-    }
-    
-    public func saveSavedFilters() async {
+    private func performInitialSearch() async {
+        guard !Task.isCancelled else { return }
+        viewState = .loaded(SearchState())
+        
         do {
-            let encoded = try JSONEncoder().encode(savedFilters)
-            UserDefaults.standard.set(encoded, forKey: "SavedFilters")
+            let results = try await loadContent()
+            handleLoadedContent(results)
         } catch {
+            handleLoadError(error)
         }
     }
     
-    public func toggleCompletion(for reminder: Reminder) {
-        guard let reminderService = reminderService else { return }
-        Task {
-            do {
-                try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
-                await performSearch()
-            } catch {
+    private func performSearch() async {
+        guard !Task.isCancelled && !isSearching else { return }
+        
+        lastSearchTime = Date()
+        isSearching = true
+        viewState = .searching
+        
+        do {
+            let results = try await loadContent()
+            handleLoadedContent(results)
+        } catch {
+            handleLoadError(error)
+        }
+        
+        isSearching = false
+    }
+}
+
+// MARK: - Search Protocols
+@MainActor
+public protocol SearchResultsPresenting {
+    var searchResults: [Reminder] { get }
+    var selectedReminder: Reminder? { get }
+    var tokens: [ReminderToken] { get }
+    func updateResults(_ results: [Reminder])
+}
+
+// MARK: - SearchResultsPresenting
+extension SearchViewModel: SearchResultsPresenting {
+    var searchResults: [Reminder] {
+        guard case .loaded(let state) = viewState else { return [] }
+        return state.searchResults
+    }
+    
+    var selectedReminder: Reminder? {
+        guard case .loaded(let state) = viewState else { return nil }
+        return state.selectedReminder
+    }
+    
+    var tokens: [ReminderToken] {
+        guard case .loaded(let state) = viewState else { return [] }
+        return state.tokens
+    }
+    
+    func updateResults(_ results: [Reminder]) {
+        updateState { state in
+            state.searchResults = results
+        }
+    }
+}
+
+// MARK: - Error Types
+extension SearchViewModel {
+    enum SearchError: LocalizedError {
+        case invalidFilterName
+        case searchFailed(Error)
+        
+        var errorDescription: String? {
+            switch self {
+            case .invalidFilterName:
+                return "Filter name cannot be empty"
+            case .searchFailed(let error):
+                return "Search operation failed: \(error.localizedDescription)"
             }
-        }
-    }
-    
-    public func deleteReminder(_ reminder: Reminder) {
-        guard let reminderService = reminderService else { return }
-        Task {
-            do {
-                try await reminderService.deleteReminder(reminder)
-                await performSearch()
-            } catch {
-            }
-        }
-    }
-    
-    public func clearSearch() async {
-        selectedSavedSearch = nil
-        searchText = ""
-        filterItems.removeAll()
-        selectedSearchScope = "All"
-        await performSearch()
-    }
-    
-    private func loadInitialSearchData() async {
-        await performSearch()
-        await loadSavedFilters()
-        if let initialSearch = initialSavedSearch {
-            await loadSavedFilter(initialSearch)
         }
     }
 }

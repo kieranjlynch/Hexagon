@@ -11,11 +11,10 @@ import Intents
 import Photos
 import EventKit
 import AVFoundation
-import HexagonData
 
 struct PermissionsView: View {
     @Environment(\.colorScheme) var colorScheme
-    @StateObject private var locationService = LocationService()
+    @StateObject private var locationManager = LocationPermissionManager.shared
     @State private var locationPermission = false
     @State private var siriPermission = false
     @State private var photosPermission = false
@@ -110,15 +109,15 @@ struct PermissionsView: View {
     
     private func handleLocationToggle(_ newValue: Bool) {
         if newValue {
-            locationService.requestWhenInUseAuthorization()
+            locationManager.requestWhenInUseAuthorization()
         } else {
             openSettings()
         }
     }
     
     private func checkLocationPermission() {
-        locationPermission = locationService.authorizationStatus == .authorizedWhenInUse ||
-        locationService.authorizationStatus == .authorizedAlways
+        locationPermission = locationManager.authorizationStatus == .authorizedWhenInUse ||
+        locationManager.authorizationStatus == .authorizedAlways
     }
     
     private func handleSiriToggle() {

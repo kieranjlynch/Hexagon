@@ -9,13 +9,18 @@ import SwiftUI
 
 struct TitleFieldView: View {
     @Binding var title: String
-    var taskType: String
-    var colorScheme: ColorScheme
+    let taskType: String
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        TextField("\(taskType.dropLast()) Title", text: $title)
-            .foregroundColor(colorScheme == .dark ? .white : .black)
-            .textFieldStyle(.roundedBorder)
-            .cornerRadius(Constants.UI.cornerRadius)
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Title")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            TitleTextField(
+                text: $title,
+                placeholder: "Add \(taskType.dropLast())"
+            )
+        }
     }
 }

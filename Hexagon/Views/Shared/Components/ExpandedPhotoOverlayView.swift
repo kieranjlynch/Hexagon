@@ -10,7 +10,7 @@ import SwiftUI
 struct ExpandedPhotoOverlayView: View {
     @Binding var expandedPhotoIndex: Int?
     @Binding var selectedPhotos: [UIImage]
-
+    
     var body: some View {
         Group {
             if let index = expandedPhotoIndex, index < selectedPhotos.count {

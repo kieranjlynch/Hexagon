@@ -10,11 +10,11 @@ import SwiftUI
 struct ZoomableScrollView<Content: View>: UIViewRepresentable {
     private var content: Content
     @Environment(\.colorScheme) var colorScheme
-
+    
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-
+    
     func makeUIView(context: Context) -> UIScrollView {
         let scrollView = UIScrollView()
         scrollView.delegate = context.coordinator
@@ -37,7 +37,7 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
         
         return scrollView
     }
-
+    
     func updateUIView(_ uiView: UIScrollView, context: Context) {
         if let hostedView = uiView.subviews.first?.subviews.first as? UIView {
             let updatedHostingController = UIHostingController(rootView: content)
@@ -47,18 +47,18 @@ struct ZoomableScrollView<Content: View>: UIViewRepresentable {
             uiView.addSubview(updatedHostingController.view)
         }
     }
-
+    
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
-
+    
     class Coordinator: NSObject, UIScrollViewDelegate {
         var parent: ZoomableScrollView
-
+        
         init(_ parent: ZoomableScrollView) {
             self.parent = parent
         }
-
+        
         func viewForZooming(in scrollView: UIScrollView) -> UIView? {
             return scrollView.subviews.first
         }

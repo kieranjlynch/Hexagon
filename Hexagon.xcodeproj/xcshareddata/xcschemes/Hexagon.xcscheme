@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1600"
+   LastUpgradeVersion = "1610"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -38,6 +38,17 @@
                BlueprintIdentifier = "DA45A5C22CA572E2004B4E14"
                BuildableName = "HexagonTests.xctest"
                BlueprintName = "HexagonTests"
+               ReferencedContainer = "container:Hexagon.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DA6439F52CD4E1A6003AFB76"
+               BuildableName = "HexagonDataTests.xctest"
+               BlueprintName = "HexagonDataTests"
                ReferencedContainer = "container:Hexagon.xcodeproj">
             </BuildableReference>
          </TestableReference>

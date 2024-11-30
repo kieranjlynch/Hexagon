@@ -7,7 +7,8 @@
 
 import SwiftUI
 
-class SymbolsLoader { static let symbols: Set<String> = Set ([
+class SymbolsLoader {
+    static let symbols: [String] = [
     "airplane.circle",
     "alarm",
     "alt",
@@ -1100,8 +1101,8 @@ class SymbolsLoader { static let symbols: Set<String> = Set ([
     "zl.rectangle.roundedtop",
     "zr.rectangle.roundedtop",
     "zzz"
-
-]) }
+    ]
+}
 
 struct SymbolPickerView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -1109,13 +1110,13 @@ struct SymbolPickerView: View {
     @Binding var selectedColor: Color
     @Binding var searchText: String
     
-    let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
+    private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
     
-    var filteredSymbols: [String] {
+    private var filteredSymbols: [String] {
         if searchText.isEmpty {
-            return Array(SymbolsLoader.symbols)
+            return SymbolsLoader.symbols
         } else {
-            return Array(SymbolsLoader.symbols).filter { $0.contains(searchText.lowercased()) }
+            return SymbolsLoader.symbols.filter { $0.contains(searchText.lowercased()) }
         }
     }
     

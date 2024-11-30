@@ -7,150 +7,265 @@
 
 import SwiftUI
 import AVFoundation
-import HexagonData
 import Combine
+import CoreData
+import os
+
+
+struct TaskDetailState: Equatable {
+    var reminder: Reminder
+    var tags: [String] = []
+    var notifications: [String] = []
+    var photos: [ReminderPhoto] = []
+    var isPlaying: Bool = false
+
+    static func == (lhs: TaskDetailState, rhs: TaskDetailState) -> Bool {
+        lhs.tags == rhs.tags &&
+        lhs.notifications == rhs.notifications &&
+        lhs.isPlaying == rhs.isPlaying
+    }
+}
 
 @MainActor
-class TaskDetailViewModel: ObservableObject {
-    @Published var reminder: Reminder
-    @Published var tags: [String] = []
-    @Published var notifications: [String] = []
-    @Published var photos: [ReminderPhoto] = []
-    @Published var isPlaying = false
-    
-    private var audioPlayer: AVAudioPlayer?
-    private let reminderService: ReminderService
-    private var cancellables = Set<AnyCancellable>()
-    
-    init(reminder: Reminder, reminderService: ReminderService) {
-        self.reminder = reminder
-        self.reminderService = reminderService
-        loadReminderDetails()
+final class TaskDetailViewModel: ViewModel, ReminderDetailsPresenting {
+    @Published private(set) var viewState: ViewState<TaskDetailState>
+    @Published var error: IdentifiableError?
+
+    var activeTasks = Set<Task<Void, Never>>()
+    var cancellables = Set<AnyCancellable>()
+
+    private let audioManager: AudioPlaybackManaging
+    private let fetchingService: ReminderFetching
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "TaskDetailViewModel")
+
+    private var currentState: TaskDetailState? {
+        switch viewState {
+        case .loaded(let state):
+            return state
+        case .loading:
+            return try? viewState.get()
+        default:
+            return nil
+        }
     }
-    
-    // MARK: - Combine Streams
-    
-    private func setupCombineSubscriptions() {
-        $reminder
+
+    init(
+        reminder: Reminder,
+        audioManager: AudioPlaybackManaging,
+        fetchingService: ReminderFetching
+    ) {
+        self.audioManager = audioManager
+        self.fetchingService = fetchingService
+        self.viewState = .loaded(TaskDetailState(reminder: reminder))
+        setupObservers()
+
+        Task {
+            await fetchDetails()
+        }
+    }
+
+    func viewDidLoad() { }
+
+    func viewWillAppear() { }
+
+    func viewWillDisappear() {
+        Task {
+            await cleanup()
+        }
+    }
+
+    func loadContent() async throws {
+        await fetchDetails()
+    }
+
+    func handleLoadedContent(_ content: Void) { }
+
+    func handleLoadError(_ error: Error) {
+        logger.error("Failed to load reminder details: \(error.localizedDescription)")
+        self.error = IdentifiableError(error: error)
+        viewState = .error(error.localizedDescription)
+    }
+
+    func togglePlayback() async {
+        guard let state = currentState else { return }
+        if state.isPlaying {
+            stopPlayback()
+        } else {
+            await startPlayback()
+        }
+    }
+
+    func stopPlayback() {
+        guard case .loaded(var state) = viewState else { return }
+        audioManager.stopPlayback()
+        state.isPlaying = false
+        viewState = .loaded(state)
+    }
+
+    func pausePlayback() {
+        guard case .loaded(var state) = viewState else { return }
+        if state.isPlaying {
+            audioManager.pausePlayback()
+            state.isPlaying = false
+            viewState = .loaded(state)
+        }
+    }
+
+    func reloadReminder() async {
+        viewState = .loading
+
+        do {
+            let updatedReminder = try fetchingService.getReminder(withID: currentState?.reminder.objectID ?? reminder.objectID)
+            guard case .loaded(var state) = viewState else { return }
+            state.reminder = updatedReminder
+            viewState = .loaded(state)
+            await fetchDetails()
+        } catch {
+            viewState = .error(error.localizedDescription)
+            logger.error("Failed to reload reminder: \(error.localizedDescription)")
+        }
+    }
+
+    private func setupObservers() {
+        $viewState
+            .map { viewState -> Reminder? in
+                if case .loaded(let state) = viewState {
+                    return state.reminder
+                }
+                return nil
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                self?.loadReminderDetails()
+                Task {
+                    try? await self?.loadContent()
+                }
             }
             .store(in: &cancellables)
     }
-    
-    // MARK: - Async/Await functions
 
-    func loadReminderDetails() {
-        Task {
-            await fetchPhotos()
-            await fetchTags()
-            await fetchNotifications()
+    private func fetchDetails() async {
+        await withCheckedContinuation { [weak self] continuation in
+            guard let self = self else {
+                continuation.resume()
+                return
+            }
+
+            Task { @MainActor in
+                guard case .loaded(var state) = self.viewState else { return }
+                let context = self.fetchingService.context
+                await context.perform {
+                    state.photos = (self.reminder.photos as? Set<ReminderPhoto>)?.sorted(by: { $0.order < $1.order }) ?? []
+                    state.tags = (self.reminder.tags as? Set<ReminderTag>)?.compactMap { $0.name } ?? []
+                    state.notifications = (self.reminder.notifications?.components(separatedBy: ",")) ?? []
+                }
+                self.viewState = .loaded(state)
+                continuation.resume()
+            }
         }
     }
 
-    @MainActor
-    func updateTags(_ newTags: [String]) {
-        self.tags = newTags
-    }
+    private func startPlayback() async {
+        await withCheckedContinuation { [weak self] continuation in
+            guard let self = self else {
+                continuation.resume()
+                return
+            }
 
-    @MainActor
-    func updatePhotos(_ newPhotos: [UIImage]) {
-        self.photos = newPhotos.compactMap { photo in
-            guard let photoData = photo.jpegData(compressionQuality: 0.8) else { return nil }
-            let reminderPhoto = ReminderPhoto(context: reminderService.persistentContainer.viewContext)
-            reminderPhoto.photoData = photoData
-            return reminderPhoto
-        }
-    }
-
-    @MainActor
-    func reloadReminder() async {
-        do {
-            let updatedReminder = try reminderService.getReminder(withID: reminder.objectID)
-            self.reminder = updatedReminder
-            loadReminderDetails()
-        } catch {
-            print("Error reloading reminder: \(error.localizedDescription)")
-        }
-    }
-    
-    // MARK: - Async Fetch Operations
-
-    private func fetchPhotos() async {
-        if let photosSet = reminder.photos as? Set<ReminderPhoto> {
-            photos = Array(photosSet)
-        } else {
-            photos = []
+            Task { @MainActor in
+                guard case .loaded(var state) = self.viewState else { return }
+                let context = self.fetchingService.context
+                await context.perform {
+                    guard let audioData = self.reminder.voiceNote?.audioData else { return }
+                    do {
+                        try self.audioManager.startPlayback(data: audioData)
+                        state.isPlaying = true
+                        self.viewState = .loaded(state)
+                    } catch {
+                        self.logger.error("Failed to start playback: \(error.localizedDescription)")
+                    }
+                }
+                continuation.resume()
+            }
         }
     }
 
-    private func fetchTags() async {
-        if let tagsSet = reminder.tags as? Set<ReminderTag> {
-            tags = tagsSet.compactMap { $0.name }
-        } else {
-            tags = []
+    @MainActor public func cleanup() async {
+        stopPlayback()
+    }
+}
+
+extension TaskDetailViewModel {
+    var reminder: Reminder {
+        if let state = currentState {
+            return state.reminder
         }
+        logger.error("Attempted to access reminder while state not loaded")
+        fatalError("Cannot access reminder: State not loaded")
     }
 
-    private func fetchNotifications() async {
-        if let notificationsString = reminder.notifications {
-            notifications = notificationsString.components(separatedBy: ",").filter { !$0.isEmpty }
-        } else {
-            notifications = []
-        }
+    var tags: [String] {
+        currentState?.tags ?? []
     }
-    
-    // MARK: - Playback Management
 
-    func togglePlayback() {
-        if isPlaying {
-            stopPlayback()
-        } else {
-            startPlayback()
-        }
+    var notifications: [String] {
+        currentState?.notifications ?? []
     }
-    
-    private func startPlayback() {
-        guard let audioData = reminder.voiceNote?.audioData else { return }
-        do {
-            audioPlayer = try AVAudioPlayer(data: audioData)
-            audioPlayer?.play()
-            isPlaying = true
-        } catch {
-            print("Error playing audio: \(error.localizedDescription)")
-        }
+
+    var photos: [ReminderPhoto] {
+        currentState?.photos ?? []
     }
-    
-    private func stopPlayback() {
-        audioPlayer?.stop()
-        isPlaying = false
+
+    var isPlaying: Bool {
+        currentState?.isPlaying ?? false
     }
-    
-    // MARK: - Utility Properties
-    
+
     var hasDates: Bool {
-        reminder.startDate != nil || reminder.endDate != nil
+        let currentReminder = reminder
+        return currentReminder.startDate != nil || currentReminder.endDate != nil
     }
 
     var hasURL: Bool {
-        guard let urlString = reminder.url, !urlString.isEmpty else { return false }
+        let currentReminder = reminder
+        guard let urlString = currentReminder.url, !urlString.isEmpty else { return false }
         return URL(string: urlString) != nil
     }
 
-    var hasLocation: Bool {
-        reminder.location != nil
-    }
-
     var hasVoiceNote: Bool {
-        reminder.voiceNote?.audioData != nil
+        let currentReminder = reminder
+        return currentReminder.voiceNote?.audioData != nil
     }
 
     var priorityText: String {
-        switch Int(reminder.priority) {
+        let currentReminder = reminder
+        switch Int(currentReminder.priority) {
         case 1: return "Low"
         case 2: return "Medium"
         case 3: return "High"
         default: return "None"
         }
+    }
+}
+
+@MainActor
+final class DefaultAudioManager: ObservableObject, AudioPlaybackManaging {
+    @Published private(set) var isPlaying: Bool = false
+    private var audioPlayer: AVAudioPlayer?
+
+    func startPlayback(data: Data) throws {
+        audioPlayer = try AVAudioPlayer(data: data)
+        audioPlayer?.play()
+        isPlaying = true
+    }
+
+    func stopPlayback() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        isPlaying = false
+    }
+
+    func pausePlayback() {
+        audioPlayer?.pause()
+        isPlaying = false
     }
 }

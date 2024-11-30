@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreData
 import os
-import HexagonData
+
 
 struct TagsSheetView: View {
     @Environment(\.appTintColor) var appTintColor
@@ -10,7 +10,8 @@ struct TagsSheetView: View {
     @Binding var selectedTags: Set<ReminderTag>
     @State private var isShowingNewTagAlert = false
     @State private var newTagName = ""
-    @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var fetchingService: ReminderFetchingServiceUI
+    @EnvironmentObject private var modificationService: ReminderModificationService
     
     @State private var errorMessage: String?
     private let logger = Logger(subsystem: Constants.General.appBundleIdentifier, category: "TagsSheetView")

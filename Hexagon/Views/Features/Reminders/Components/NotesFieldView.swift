@@ -23,6 +23,7 @@ struct NotesFieldView: View {
                 }
                 .foregroundColor(colorScheme == .dark ? .white : .black)
             }
+            .buttonStyle(PlainButtonStyle())
             if !notes.isEmpty {
                 Text(notes.components(separatedBy: .newlines).first ?? "")
                     .lineLimit(1)

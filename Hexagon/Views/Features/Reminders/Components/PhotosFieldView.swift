@@ -23,6 +23,7 @@ struct PhotosFieldView: View {
                 }
                 .foregroundColor(colorScheme == .dark ? .white : .black)
             }
+            .buttonStyle(PlainButtonStyle())
             if !selectedPhotos.isEmpty {
                 ScrollView(.horizontal) {
                     HStack {

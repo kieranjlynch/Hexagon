@@ -7,7 +7,7 @@
 
 import SwiftUI
 import CoreData
-import HexagonData
+
 import TipKit
 
 struct ListItemView: View {
@@ -17,10 +17,29 @@ struct ListItemView: View {
     @State private var showEditView = false
     @State private var showFloatingActionButtonTip = true
     @Environment(\.managedObjectContext) var context
-    @EnvironmentObject var reminderService: ReminderService
-    @ObservedObject var viewModel: ListDetailViewModel
-    
+    @StateObject private var viewModel: ListDetailViewModel
     private let floatingActionButtonTip = FloatingActionButtonTip()
+    
+    init(
+        taskList: TaskList,
+        selectedListID: Binding<NSManagedObjectID?>,
+        onDelete: @escaping () -> Void,
+        reminderFetchingService: ReminderFetchingService,
+        reminderModificationService: ReminderModificationService,
+        subheadingService: SubHeadingServiceFacade
+    ) {
+        self.taskList = taskList
+        self._selectedListID = selectedListID
+        self.onDelete = onDelete
+        
+        let viewModel = ViewModelFactory.createListDetailViewModel(
+            taskList: taskList,
+            reminderFetchingService: reminderFetchingService,
+            reminderModificationService: reminderModificationService,
+            subheadingService: subheadingService
+        )
+        self._viewModel = StateObject(wrappedValue: viewModel)
+    }
     
     var body: some View {
         NavigationLink(
@@ -50,6 +69,49 @@ struct ListItemView: View {
         }
         .sheet(isPresented: $showEditView) {
             AddNewListView(taskList: taskList)
+                .environment(\.managedObjectContext, context)
         }
+    }
+}
+
+@MainActor
+enum ViewModelFactory {
+    private static var viewModelCache: [NSManagedObjectID: ListDetailViewModel] = [:]
+    private static let lock = NSLock()
+    
+    static func createListDetailViewModel(
+        taskList: TaskList,
+        reminderFetchingService: ReminderFetchingService,
+        reminderModificationService: ReminderModificationService,
+        subheadingService: SubHeadingServiceFacade
+    ) -> ListDetailViewModel {
+        lock.lock()
+        defer { lock.unlock() }
+        
+        if let cachedViewModel = viewModelCache[taskList.objectID] {
+            return cachedViewModel
+        }
+    
+        let performanceMonitor = DefaultPerformanceMonitor()
+        
+        _ = SubHeadingViewModel(
+            subheadingManager: subheadingService as! SubHeadingManaging,
+            performanceMonitor: performanceMonitor as any PerformanceMonitoring
+        )
+        
+        let viewModel = ListDetailViewModel(
+            taskList: taskList,
+            reminderService: reminderFetchingService,
+            subHeadingService: subheadingService,
+            performanceMonitor: performanceMonitor as any PerformanceMonitoring
+        )
+        
+        viewModelCache[taskList.objectID] = viewModel
+        
+        if viewModelCache.count > 100 {
+            viewModelCache.removeAll()
+        }
+        
+        return viewModel
     }
 }

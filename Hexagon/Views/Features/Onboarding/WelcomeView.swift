@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct WelcomeView: View {
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore: Bool = false
     @State private var onboardingStep: Int = 0
@@ -14,6 +15,7 @@ struct WelcomeView: View {
     @State private var logoOpacity: Double = 0.0
     @State private var errorMessage: String? = nil
     @State private var isErrorPresented: Bool = false
+    @State private var isCoreDataInitialized = false
     
     private let backgroundColor = Color(hex: "1B1B1E")
     
@@ -23,31 +25,45 @@ struct WelcomeView: View {
                 .adaptiveForegroundAndBackground()
                 .ignoresSafeArea()
             
-            switch onboardingStep {
-            case 0:
-                welcomeScreen
-            case 1:
-                PermissionsView(onContinue: {
-                    onboardingStep = 2
-                }, isInSettings: false)
-            case 2:
-                TaskTermSelectionView {
-                    onboardingStep = 3
+            if !isCoreDataInitialized {
+                ProgressView("Initializing...")
+                    .task {
+                        do {
+                            try await PersistenceController.shared.initialize()
+                            try await ListService.shared.ensureInboxListExists()
+                            isCoreDataInitialized = true
+                        } catch {
+                            errorMessage = error.localizedDescription
+                            isErrorPresented = true
+                        }
+                    }
+            } else {
+                switch onboardingStep {
+                case 0:
+                    welcomeScreen
+                case 1:
+                    PermissionsView(onContinue: {
+                        onboardingStep = 2
+                    }, isInSettings: false)
+                case 2:
+                    TaskTermSelectionView {
+                        onboardingStep = 3
+                    }
+                case 3:
+                    ContentView(selectedTab: .constant("Lists"))
+                        .onAppear {
+                            hasLaunchedBefore = true
+                        }
+                default:
+                    Text("Error: Invalid onboarding step")
+                        .onAppear {
+                            errorMessage = "Invalid onboarding step"
+                            isErrorPresented = true
+                        }
                 }
-            case 3:
-                ContentView(selectedTab: .constant("Lists"))
-                    .onAppear {
-                        hasLaunchedBefore = true
-                    }
-            default:
-                Text("Error: Invalid onboarding step")
-                    .onAppear {
-                        errorMessage = "Invalid onboarding step"
-                        isErrorPresented = true
-                    }
             }
         }
-        .errorAlert(errorMessage: $errorMessage, isPresented: $isErrorPresented) 
+        .errorAlert(errorMessage: $errorMessage, isPresented: $isErrorPresented)
     }
     
     private var welcomeScreen: some View {

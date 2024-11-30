@@ -10,7 +10,7 @@ import SwiftUI
 struct AppearanceSettingsView: View {
     @EnvironmentObject var appSettings: AppSettings
     @Environment(\.colorScheme) var colorScheme
-
+    
     var body: some View {
         Form {
             Section(header: adaptiveSectionHeader(title: "App Tint Color")) {

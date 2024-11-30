@@ -4,6 +4,16 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>HexData.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+		<key>HexWidgetExtension.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
 		<key>Hexagon.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -14,11 +24,6 @@
 			<key>orderHint</key>
 			<integer>2</integer>
 		</dict>
-		<key>HexagonWidgetExtension.xcscheme_^#shared#^_</key>
-		<dict>
-			<key>orderHint</key>
-			<integer>1</integer>
-		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
@@ -28,6 +33,11 @@
 			<true/>
 		</dict>
 		<key>DA7D7D482C808E3D00CC258C</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>DA8FA9952CF5C39E007B94EC</key>
 		<dict>
 			<key>primary</key>
 			<true/>

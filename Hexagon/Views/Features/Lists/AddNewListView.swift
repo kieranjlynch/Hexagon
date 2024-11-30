@@ -1,16 +1,15 @@
 import SwiftUI
-import HexagonData
+
 
 struct AddNewListView: View {
     @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject var fetchingService: ReminderFetchingServiceUI
     @EnvironmentObject private var listService: ListService
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var selectedColor: Color
     @State private var selectedSymbol: String
     @State private var searchText: String = ""
-    @State private var showSymbolPicker: Bool = false
     @State private var errorMessage: String?
     
     private var taskList: TaskList?
@@ -30,38 +29,17 @@ struct AddNewListView: View {
         NavigationStack {
             VStack {
                 VStack(alignment: .center, spacing: 16) {
-                    ListHeader(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, name: $name, colorScheme: colorScheme)
+                    ListHeader(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, name: $name, colorScheme: _colorScheme)
                         .frame(height: 50)
                     ColorPickerView(selectedColor: $selectedColor)
                         .frame(maxWidth: 200)
                 }
                 .padding()
                 
-                if showSymbolPicker {
-                    VStack(spacing: 16) {
-                        SearchBar(text: $searchText, placeholder: "Search icons")
-                        SymbolPickerView(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, searchText: $searchText)
-                            .transition(.move(edge: .leading))
-                    }
-                    .animation(.easeInOut, value: showSymbolPicker)
-                } else {
-                    Button(action: {
-                        withAnimation {
-                            showSymbolPicker.toggle()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: selectedSymbol)
-                                .foregroundColor(selectedColor)
-                            Text("Choose Symbol")
-                                .foregroundColor(.blue)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color(UIColor.systemGray6))
-                        .cornerRadius(4)
-                    }
-                    .padding([.horizontal, .vertical])
+                VStack(spacing: 16) {
+                    SearchBar(text: $searchText, placeholder: "Search icons")
+                    SymbolPickerView(selectedSymbol: $selectedSymbol, selectedColor: $selectedColor, searchText: $searchText)
+                        .frame(maxHeight: 300)
                 }
                 
                 Spacer()
@@ -100,24 +78,23 @@ struct AddNewListView: View {
             if let existingList = taskList {
                 try await listService.updateTaskList(existingList, name: name, color: uiColor, symbol: selectedSymbol)
             } else {
-                try await listService.saveTaskList(name: name, color: uiColor, symbol: selectedSymbol)
+                let _ = try await listService.saveTaskList(name: name, color: uiColor, symbol: selectedSymbol)
             }
             dismiss()
+        } catch let error as ListService.ListServiceError {
+            errorMessage = error.localizedDescription
         } catch {
-            if let listError = error as? ListService.ListServiceError {
-                errorMessage = listError.localizedDescription
-            } else {
-                errorMessage = error.localizedDescription
-            }
+            errorMessage = error.localizedDescription
         }
     }
 }
+
 
 struct ListHeader: View {
     @Binding var selectedSymbol: String
     @Binding var selectedColor: Color
     @Binding var name: String
-    var colorScheme: ColorScheme
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         HStack {
@@ -125,8 +102,7 @@ struct ListHeader: View {
                 .foregroundColor(selectedColor)
                 .font(.system(size: 30))
                 .frame(width: 40, height: 40)
-            TextField("List Name", text: $name)
-                .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
+            TitleTextField(text: $name)
                 .textFieldStyle(.roundedBorder)
         }
     }

@@ -5,181 +5,605 @@
 //  Created by Kieran Lynch on 16/09/2024.
 //
 
+import CoreData
 import SwiftUI
-import CoreLocation
 import os
-import AVFoundation
-import HexagonData
+import Combine
+
+
+enum RepeatOption: String, CaseIterable, Codable {
+    case none = "None"
+    case daily = "Daily"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+    case yearly = "Yearly"
+    case custom = "Custom"
+}
+
+struct AddReminderState: Equatable {
+    var title: String = ""
+    var startDate: Date = Date()
+    var endDate: Date?
+    var selectedList: TaskList?
+    var priority: Int = 0
+    var url: String = ""
+    var selectedNotifications: Set<String> = []
+    var selectedTags: Set<ReminderTag> = []
+    var notes: String = ""
+    var selectedPhotos: [UIImage] = []
+    var isShowingImagePicker = false
+    var isShowingNewTagAlert = false
+    var newTagName: String = ""
+    var expandedPhotoIndex: Int?
+    var voiceNoteData: Data?
+    var repeatOption: RepeatOption = .none
+    var customRepeatInterval: Int = 1
+    
+    static func == (lhs: AddReminderState, rhs: AddReminderState) -> Bool {
+        lhs.title == rhs.title &&
+        lhs.startDate == rhs.startDate &&
+        lhs.endDate == rhs.endDate &&
+        lhs.priority == rhs.priority &&
+        lhs.url == rhs.url &&
+        lhs.selectedNotifications == rhs.selectedNotifications &&
+        lhs.notes == rhs.notes &&
+        lhs.isShowingImagePicker == rhs.isShowingImagePicker &&
+        lhs.isShowingNewTagAlert == rhs.isShowingNewTagAlert &&
+        lhs.newTagName == rhs.newTagName &&
+        lhs.expandedPhotoIndex == rhs.expandedPhotoIndex &&
+        lhs.repeatOption == rhs.repeatOption &&
+        lhs.customRepeatInterval == rhs.customRepeatInterval
+    }
+}
 
 @MainActor
-public class AddReminderViewModel: ObservableObject {
-    @AppStorage("preferredTaskType") public var preferredTaskType: String = "Tasks"
-    @Published public var title: String = ""
-    @Published public var startDate: Date = Date()
-    @Published public var endDate: Date = Date()
-    @Published public var selectedList: TaskList?
-    @Published public var priority: Int = 0
-    @Published public var url: String = ""
-    @Published public var selectedNotifications: Set<String> = []
-    @Published public var selectedTags: Set<ReminderTag> = []
-    @Published public var notes: String = ""
-    @Published public var selectedPhotos: [UIImage] = []
-    @Published public var selectedLocation: Location?
-    @Published public var isShowingImagePicker = false
-    @Published public var isShowingNewTagAlert = false
-    @Published public var newTagName: String = ""
-    @Published public var expandedPhotoIndex: Int?
-    @Published public var errorMessage: String?
-    @Published public var voiceNoteData: Data?
+final class AddReminderViewModel: ViewModel, ObservableObject {
+    @AppStorage("preferredTaskType") var preferredTaskType: String = "Tasks"
+    @Published private(set) var viewState: ViewState<AddReminderState>
+    @Published var error: IdentifiableError?
     
-    public var reminder: Reminder?
-    public var reminderService: ReminderService!
-    public var locationService: LocationService!
-    public var tagService: TagService!
-    public var listService: ListService!
+    var activeTasks = Set<Task<Void, Never>>()
+    var cancellables = Set<AnyCancellable>()
     
-    private var logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "AddReminderViewModel")
+    private var shouldSyncEndDate = true
+    private let reminderCreator: ReminderCreating
+    private let taskLimitChecker: TaskLimitChecking
+    private let tagService: TagService
+    private let listService: any ListServiceProtocol
+    private var cachedState: ReminderViewStateAccessor?
+    private var lastReadTitle: String = ""
+    private var lastReadStartDate: Date = Date()
+    private var lastReadEndDate: Date? = nil
+    private var lastReadPriority: Int = 0
+    var reminder: Reminder?
     
-    public init(reminder: Reminder? = nil, defaultList: TaskList? = nil) {
+    private var currentViewState: ReminderViewStateAccessor {
+        if let cached = cachedState {
+            return cached
+        }
+        
+        let newState: ReminderViewStateAccessor
+        switch viewState {
+        case .loaded(let state):
+            newState = ReminderViewStateAccessor(from: state)
+        case .loading:
+            if let lastState = (try? viewState.get()) {
+                newState = ReminderViewStateAccessor(from: lastState)
+            } else {
+                newState = ReminderViewStateAccessor(from: AddReminderState())
+            }
+        default:
+            newState = ReminderViewStateAccessor(from: AddReminderState())
+        }
+        
+        cachedState = newState
+        return newState
+    }
+    
+    init(
+        reminder: Reminder? = nil,
+        defaultList: TaskList? = nil,
+        reminderCreator: ReminderCreating,
+        taskLimitChecker: TaskLimitChecking,
+        tagService: TagService,
+        listService: any ListServiceProtocol
+    ) {
         self.reminder = reminder
+        self.reminderCreator = reminderCreator
+        self.taskLimitChecker = taskLimitChecker
+        self.tagService = tagService
+        self.listService = listService
+        
+        self.viewState = .loaded(AddReminderState())
+        
         if let reminder = reminder {
             loadReminder(reminder)
         } else if let defaultList = defaultList {
-            selectedList = defaultList
+            updateState { state in
+                state.selectedList = defaultList
+            }
         }
+        
+        setupBindings()
+    }
+    
+    private func updateState(_ update: (inout AddReminderState) -> Void) {
+        guard case .loaded(var state) = viewState else { return }
+        
+        let oldTitle = state.title
+        let oldStartDate = state.startDate
+        let oldEndDate = state.endDate
+        let oldPriority = state.priority
+        
+        update(&state)
+        
+        if oldTitle != state.title {
+            print("📝 Title updated: '\(oldTitle)' -> '\(state.title)'")
+        }
+        if oldStartDate != state.startDate {
+            print("📅 Start date updated: \(oldStartDate) -> \(state.startDate)")
+        }
+        if oldEndDate != state.endDate {
+            print("📅 End date updated: \(String(describing: oldEndDate)) -> \(String(describing: state.endDate))")
+        }
+        if oldPriority != state.priority {
+            print("⭐️ Priority updated: \(oldPriority) -> \(state.priority)")
+        }
+        
+        viewState = .loaded(state)
+        cachedState = nil
+    }
+    
+    var title: String {
+        get {
+            let currentTitle = currentViewState.title
+            if currentTitle != lastReadTitle {
+                lastReadTitle = currentTitle
+                print("📖 Title value: '\(currentTitle)'")
+            }
+            return currentTitle
+        }
+        set {
+            if newValue != currentViewState.title {
+                print("✏️ Setting title: '\(newValue)'")
+                updateState { $0.title = newValue }
+            }
+        }
+    }
+    
+    var startDate: Date {
+        get {
+            let currentDate = currentViewState.startDate
+            if currentDate != lastReadStartDate {
+                lastReadStartDate = currentDate
+                print("📅 Start date value: \(currentDate)")
+            }
+            return currentDate
+        }
+        set {
+            if newValue != currentViewState.startDate {
+                print("📅 Setting start date: \(newValue)")
+                updateState { state in
+                    state.startDate = newValue
+                    if shouldSyncEndDate {
+                        state.endDate = newValue
+                    }
+                }
+            }
+        }
+    }
+    
+    var endDate: Date? {
+        get {
+            let currentDate = currentViewState.endDate
+            if currentDate != lastReadEndDate {
+                lastReadEndDate = currentDate
+                print("📅 End date value: \(String(describing: currentDate))")
+            }
+            return currentDate
+        }
+        set {
+            if newValue != currentViewState.endDate {
+                print("📅 Setting end date: \(String(describing: newValue))")
+                updateState { state in
+                    state.endDate = newValue
+                    shouldSyncEndDate = false
+                }
+            }
+        }
+    }
+    
+    var priority: Int {
+        get {
+            let currentPriority = currentViewState.priority
+            if currentPriority != lastReadPriority {
+                lastReadPriority = currentPriority
+                print("⭐️ Priority value: \(currentPriority)")
+            }
+            return currentPriority
+        }
+        set {
+            if newValue != currentViewState.priority {
+                print("⭐️ Setting priority: \(newValue)")
+                updateState { $0.priority = newValue }
+            }
+        }
+    }
+    
+    var selectedList: TaskList? {
+        get { currentViewState.selectedList }
+        set {
+            print("📋 Setting selected list: \(newValue?.name ?? "nil")")
+            updateState { $0.selectedList = newValue }
+        }
+    }
+    
+    var url: String {
+        get { currentViewState.url }
+        set {
+            print("🔗 Setting URL: \(newValue)")
+            updateState { $0.url = newValue }
+        }
+    }
+    
+    var selectedNotifications: Set<String> {
+        get { currentViewState.notifications }
+        set {
+            print("🔔 Setting notifications: \(newValue)")
+            updateState { $0.selectedNotifications = newValue }
+        }
+    }
+    
+    var selectedTags: Set<ReminderTag> {
+        get { currentViewState.tags }
+        set {
+            print("🏷️ Setting tags: \(newValue.map { $0.name ?? "" })")
+            updateState { $0.selectedTags = newValue }
+        }
+    }
+    
+    var notes: String {
+        get { currentViewState.notes }
+        set {
+            print("📝 Setting notes: \(newValue)")
+            updateState { $0.notes = newValue }
+        }
+    }
+    
+    var selectedPhotos: [UIImage] {
+        get { currentViewState.photos }
+        set {
+            print("📸 Setting photos count: \(newValue.count)")
+            updateState { $0.selectedPhotos = newValue }
+        }
+    }
+    
+    var isShowingImagePicker: Bool {
+        get { currentViewState.isShowingImagePicker }
+        set {
+            print("🖼️ Setting image picker visibility: \(newValue)")
+            updateState { $0.isShowingImagePicker = newValue }
+        }
+    }
+    
+    var isShowingNewTagAlert: Bool {
+        get { currentViewState.isShowingNewTagAlert }
+        set {
+            print("🏷️ Setting new tag alert visibility: \(newValue)")
+            updateState { $0.isShowingNewTagAlert = newValue }
+        }
+    }
+    
+    var newTagName: String {
+        get { currentViewState.newTagName }
+        set {
+            print("🏷️ Setting new tag name: \(newValue)")
+            updateState { $0.newTagName = newValue }
+        }
+    }
+    
+    var expandedPhotoIndex: Int? {
+        get { currentViewState.expandedPhotoIndex }
+        set {
+            print("🔍 Setting expanded photo index: \(String(describing: newValue))")
+            updateState { $0.expandedPhotoIndex = newValue }
+        }
+    }
+    
+    var voiceNoteData: Data? {
+        get { currentViewState.voiceNoteData }
+        set {
+            print("🎤 Setting voice note data: \(newValue != nil ? "present" : "nil")")
+            updateState { $0.voiceNoteData = newValue }
+        }
+    }
+    
+    var repeatOption: RepeatOption {
+        get { currentViewState.repeatOption }
+        set {
+            print("🔄 Setting repeat option: \(newValue.rawValue)")
+            updateState { $0.repeatOption = newValue }
+        }
+    }
+    
+    var customRepeatInterval: Int {
+        get { currentViewState.customRepeatInterval }
+        set {
+            print("⏱️ Setting custom repeat interval: \(newValue)")
+            updateState { $0.customRepeatInterval = newValue }
+        }
+    }
+    
+    var isFormValid: Bool {
+        currentViewState.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+    
+    func checkTaskLimits() async throws -> Bool {
+        print("📝 Checking task limits...")
+        
+        let state = currentViewState // Get all state at once
+        viewState = .loading
+        
+        do {
+            print("Checking start date limit for:", state.startDate)
+            if try await !taskLimitChecker.canAddTaskWithStartDate(state.startDate, excluding: reminder?.reminderID) {
+                print("❌ Exceeded start date limit")
+                throw ReminderError.exceededStartDateLimit
+            }
+            
+            if let endDate = state.endDate {
+                print("Checking end date limit for:", endDate)
+                if try await !taskLimitChecker.canAddTaskWithEndDate(endDate, excluding: reminder?.reminderID) {
+                    print("❌ Exceeded end date limit")
+                    throw ReminderError.exceededEndDateLimit
+                }
+            }
+            
+            print("✅ Task limits check passed")
+            viewState = .loaded(AddReminderState(
+                title: state.title,
+                startDate: state.startDate,
+                endDate: state.endDate,
+                selectedList: state.selectedList,
+                priority: state.priority,
+                url: state.url,
+                selectedNotifications: state.notifications,
+                selectedTags: state.tags,
+                notes: state.notes,
+                selectedPhotos: state.photos,
+                repeatOption: state.repeatOption,
+                customRepeatInterval: state.customRepeatInterval
+            ))
+            return true
+        } catch {
+            print("❌ Task limits check failed:", error.localizedDescription)
+            viewState = .error(error.localizedDescription)
+            throw error
+        }
+    }
+    
+    func saveReminder() async throws -> (Reminder, [String], [UIImage]) {
+        print("💾 Starting save reminder process")
+        let state = currentViewState
+        print("Current title: \(state.title)")
+        
+        guard !state.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            print("❌ Form invalid - empty title")
+            throw ReminderError.emptyTitle
+        }
+        
+        viewState = .loading
+        print("State set to loading")
+        
+        do {
+            guard try await checkTaskLimits() else {
+                print("❌ Failed task limits check")
+                throw ReminderError.exceededStartDateLimit
+            }
+            
+            let targetList = try await fetchTargetList()
+            let adjustedEndDate = (state.endDate != state.startDate) ? state.endDate : nil
+            
+            print("📝 Saving reminder with title: \(state.title)")
+            let savedReminder = try await reminderCreator.saveReminder(
+                title: state.title,
+                startDate: state.startDate,
+                endDate: adjustedEndDate,
+                notes: state.notes,
+                url: ensureValidURL(state.url),
+                priority: Int16(state.priority),
+                list: targetList,
+                subHeading: nil,
+                tags: state.tags,
+                photos: state.photos,
+                notifications: state.notifications,
+                voiceNoteData: nil, // Add if needed
+                repeatOption: state.repeatOption.rawValue,
+                customRepeatInterval: Int16(state.customRepeatInterval)
+            )
+            
+            print("✅ Successfully saved reminder with title: \(savedReminder.title ?? "")")
+            viewState = .loaded(AddReminderState(
+                title: state.title,
+                startDate: state.startDate,
+                endDate: state.endDate,
+                selectedList: targetList,
+                priority: state.priority,
+                url: state.url,
+                selectedNotifications: state.notifications,
+                selectedTags: state.tags,
+                notes: state.notes,
+                selectedPhotos: state.photos,
+                repeatOption: state.repeatOption,
+                customRepeatInterval: state.customRepeatInterval
+            ))
+            
+            self.reminder = savedReminder
+            return (savedReminder, state.tags.compactMap { $0.name }, state.photos)
+        } catch {
+            print("❌ Save failed with error: \(error.localizedDescription)")
+            viewState = .error(error.localizedDescription)
+            throw error
+        }
+    }
+    
+    func updatePhotos(_ newPhotos: [UIImage]) {
+        updateState { $0.selectedPhotos = newPhotos }
+    }
+    
+    func addNewTag() async throws {
+        guard case .loaded(var state) = viewState else { return }
+        guard !state.newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        let newTag = try await tagService.createTag(name: state.newTagName)
+        if newTag.objectID.isTemporaryID {
+            try newTag.managedObjectContext?.save()
+        }
+        state.selectedTags.insert(newTag)
+        state.newTagName = ""
+        viewState = .loaded(state)
+    }
+    
+    func viewDidLoad() { }
+    
+    func viewWillAppear() { }
+    
+    func viewWillDisappear() { }
+    
+    private func setupBindings() {
+        $viewState
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+    }
+    
+    public func updateViewState(_ newState: ViewState<AddReminderState>) {
+        viewState = newState
     }
     
     private func loadReminder(_ reminder: Reminder) {
-        title = reminder.title ?? ""
-        startDate = reminder.startDate ?? Date()
-        endDate = reminder.endDate ?? Date()
-        selectedTags = reminder.tags as? Set<ReminderTag> ?? []
-        selectedList = reminder.list
-        notes = reminder.notes ?? ""
-        url = reminder.url ?? ""
-        priority = Int(reminder.priority)
-        selectedPhotos = (reminder.photos as? Set<ReminderPhoto> ?? []).compactMap { UIImage(data: $0.photoData ?? Data()) }
-        selectedNotifications = Set(reminder.notifications?.components(separatedBy: ",") ?? [])
-        selectedLocation = reminder.location
-        voiceNoteData = reminder.voiceNote?.audioData
+        let task = Task { [weak self] in
+            guard let self = self else { return }
+            updateState { state in
+                state.title = reminder.title ?? ""
+                state.startDate = reminder.startDate ?? Date()
+                state.endDate = reminder.endDate
+                state.selectedTags = reminder.tags as? Set<ReminderTag> ?? []
+                state.selectedList = reminder.list
+                state.notes = reminder.notes ?? ""
+                state.url = reminder.url ?? ""
+                state.priority = Int(reminder.priority)
+                state.selectedPhotos = MediaManager.loadPhotos(from: reminder.photos as? Set<ReminderPhoto> ?? [])
+                state.selectedNotifications = Set(reminder.notifications?.components(separatedBy: ",") ?? [])
+                state.voiceNoteData = reminder.voiceNote?.audioData
+                if let repeatString = reminder.repeatOption {
+                    state.repeatOption = RepeatOption(rawValue: repeatString) ?? .none
+                }
+                state.customRepeatInterval = Int(reminder.customRepeatInterval)
+            }
+        }
+        activeTasks.insert(task)
     }
     
-    public var isFormValid: Bool {
-        !title.isEmpty
-    }
-    
-    public func updatePhotos(_ newPhotos: [UIImage]) {
-        self.selectedPhotos = newPhotos
-    }
-    
-    // MARK: - Async/Await for saving the reminder
-
-    public func saveReminder() async throws -> (Reminder, [String], [UIImage]) {
-        guard let reminderService = reminderService, let _ = listService else {
+    private func fetchTargetList() async throws -> TaskList {
+        guard case .loaded(let state) = viewState else {
             throw ReminderError.missingServices
         }
         
-        try validateReminderData()
-        
-        let locationCoordinate = selectedLocation.map { CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude) }
-        
-        logger.debug("Saving reminder with priority: \(self.priority)")
-        
-        let targetList: TaskList
-        if let selectedList = selectedList {
-            targetList = selectedList
-        } else {
-            targetList = try await fetchInboxList()
-        }
-        
-        let savedReminder = try await reminderService.saveReminder(
-            reminder: reminder,
-            title: title,
-            startDate: startDate,
-            endDate: endDate,
-            notes: notes,
-            url: ensureValidURL(url),
-            priority: Int16(priority),
-            list: targetList,
-            subHeading: nil,
-            tags: selectedTags,
-            photos: selectedPhotos,
-            notifications: selectedNotifications,
-            location: locationCoordinate,
-            radius: 100,
-            voiceNoteData: voiceNoteData
-        )
-        
-        self.reminder = savedReminder
-        logger.debug("Saved reminder with priority: \(savedReminder.priority)")
-        
-        return (savedReminder, selectedTags.compactMap { $0.name }, selectedPhotos)
-    }
-    
-    private func fetchInboxList() async throws -> TaskList {
-        guard let listService = listService else {
-            throw ReminderError.missingServices
-        }
-        return try await listService.fetchInboxList()
-    }
-    
-    // MARK: - Helper Methods for Validation and URL Formatting
-
-    private func validateReminderData() throws {
-        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            throw ReminderError.emptyTitle
-        }
-    }
-    
-    public func ensureValidURL(_ urlString: String) -> String {
-        if urlString.isEmpty {
-            return ""
-        } else if urlString.lowercased().hasPrefix("http://") || urlString.lowercased().hasPrefix("https://") {
-            return urlString
-        } else {
-            return "https://" + urlString
-        }
-    }
-    
-    public func saveVoiceNoteDataToFile(data: Data) -> URL? {
-        let audioFilename = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("voiceNote.m4a")
         do {
-            try data.write(to: audioFilename)
-            return audioFilename
+            if let selectedList = state.selectedList {
+                if selectedList.objectID.isTemporaryID {
+                    try selectedList.managedObjectContext?.save()
+                }
+                return selectedList
+            }
+            
+            let inbox = try await listService.fetchInboxList()
+            if inbox.objectID.isTemporaryID {
+                try inbox.managedObjectContext?.save()
+            }
+            await MainActor.run {
+                updateState { $0.selectedList = inbox }
+            }
+            return inbox
         } catch {
-            return nil
+            viewState = .error(error.localizedDescription)
+            throw error
         }
     }
     
-    // MARK: - Location Services and Tag Management
-
-    public func searchLocations(query: String) async throws -> [SearchResult] {
-        return try await locationService.search(with: query, coordinate: locationService.currentLocation)
-    }
-    
-    public func startLocationUpdates() {
-        locationService.startUpdatingLocation()
-    }
-    
-    public func requestLocationPermission() {
-        locationService.requestWhenInUseAuthorization()
-    }
-    
-    public func addNewTag() async throws {
-        guard !newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard reminderService != nil else {
-            throw ReminderError.missingServices
+    private func ensureValidURL(_ urlString: String) -> String {
+        guard !urlString.isEmpty else { return "" }
+        guard !urlString.lowercased().hasPrefix("http://"), !urlString.lowercased().hasPrefix("https://") else {
+            return urlString
         }
-        let newTag = try await tagService.createTag(name: newTagName)
-        selectedTags.insert(newTag)
-        newTagName = ""
+        return "https://" + urlString
     }
-    
-    // MARK: - Error Handling
+}
 
-    public enum ReminderError: Error {
+extension AddReminderViewModel {
+    enum ReminderError: Error, LocalizedError {
         case emptyTitle
         case saveFailed(Error)
         case missingServices
+        case exceededStartDateLimit
+        case exceededEndDateLimit
+        
+        var errorDescription: String? {
+            switch self {
+            case .emptyTitle:
+                return "Title cannot be empty"
+            case .saveFailed(let error):
+                return "Failed to save reminder: \(error.localizedDescription)"
+            case .missingServices:
+                return "Required services are not available"
+            case .exceededStartDateLimit:
+                return "Maximum number of tasks already started for this date"
+            case .exceededEndDateLimit:
+                return "Maximum number of tasks already scheduled for completion on this date"
+            }
+        }
+    }
+}
+
+private struct ReminderViewStateAccessor {
+    let title: String
+    let startDate: Date
+    let endDate: Date?
+    let selectedList: TaskList?
+    let priority: Int
+    let url: String
+    let notifications: Set<String>
+    let tags: Set<ReminderTag>
+    let notes: String
+    let photos: [UIImage]
+    let repeatOption: RepeatOption
+    let customRepeatInterval: Int
+    let isShowingImagePicker: Bool
+    let isShowingNewTagAlert: Bool
+    let newTagName: String
+    let expandedPhotoIndex: Int?
+    let voiceNoteData: Data?
+    
+    init(from state: AddReminderState) {
+        self.title = state.title
+        self.startDate = state.startDate
+        self.endDate = state.endDate
+        self.selectedList = state.selectedList
+        self.priority = state.priority
+        self.url = state.url
+        self.notifications = state.selectedNotifications
+        self.tags = state.selectedTags
+        self.notes = state.notes
+        self.photos = state.selectedPhotos
+        self.repeatOption = state.repeatOption
+        self.customRepeatInterval = state.customRepeatInterval
+        self.isShowingImagePicker = state.isShowingImagePicker
+        self.isShowingNewTagAlert = state.isShowingNewTagAlert
+        self.newTagName = state.newTagName
+        self.expandedPhotoIndex = state.expandedPhotoIndex
+        self.voiceNoteData = state.voiceNoteData
     }
 }

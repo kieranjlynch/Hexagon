@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import HexagonData
+
 
 public struct ListSheetView: View {
     @Environment(\.appTintColor) var appTintColor
@@ -14,7 +14,8 @@ public struct ListSheetView: View {
     @Binding var selectedList: TaskList?
     @State private var lists: [TaskList] = []
     @State private var isShowingAddNewList = false
-    @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var fetchingService: ReminderFetchingServiceUI
+    @EnvironmentObject private var modificationService: ReminderModificationService
     @EnvironmentObject private var listService: ListService
     @State private var errorMessage: String?
     

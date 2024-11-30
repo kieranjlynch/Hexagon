@@ -9,9 +9,9 @@ import SwiftUI
 
 struct DateFieldsView: View {
     @Binding var startDate: Date
-    @Binding var endDate: Date
+    @Binding var endDate: Date?
     var colorScheme: ColorScheme
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -25,13 +25,9 @@ struct DateFieldsView: View {
                 DatePicker(
                     "",
                     selection: $startDate,
-                    in: Date()...,
-                    displayedComponents: .date
+                    displayedComponents: [.date, .hourAndMinute]
                 )
                 .labelsHidden()
-                .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-                .environment(\.calendar, Calendar(identifier: .gregorian))
-                .environment(\.timeZone, TimeZone(secondsFromGMT: 0)!)
             }
             .padding(.bottom)
 
@@ -45,15 +41,15 @@ struct DateFieldsView: View {
                 Spacer()
                 DatePicker(
                     "",
-                    selection: $endDate,
-                    in: Date()...,
-                    displayedComponents: .date
+                    selection: Binding(get: {
+                        endDate ?? startDate
+                    }, set: { newValue in
+                        endDate = newValue
+                    }),
+                    displayedComponents: [.date, .hourAndMinute]
                 )
                 .labelsHidden()
-                .environment(\.locale, Locale(identifier: "en_US_POSIX"))
-                .environment(\.calendar, Calendar(identifier: .gregorian))
-                .environment(\.timeZone, TimeZone(secondsFromGMT: 0)!)
-            }            
+            }
         }
         .onAppear {
             DateFormatter.updateSharedDateFormatter()

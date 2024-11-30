@@ -29,7 +29,6 @@ class SubscriptionManager: ObservableObject {
         do {
             products = try await Product.products(for: productIds)
         } catch {
-            print("Error loading products: \(error)")
         }
     }
 
@@ -40,12 +39,10 @@ class SubscriptionManager: ObservableObject {
             switch verificationResult {
             case .verified(let transaction):
                 await transaction.finish()
-            case .unverified(_, let error):
-                print("Unverified transaction: \(error.localizedDescription)")
+            case .unverified:
+                break
             }
-        case .userCancelled:
-            break
-        case .pending:
+        case .userCancelled, .pending:
             break
         @unknown default:
             break
@@ -58,8 +55,8 @@ class SubscriptionManager: ObservableObject {
                 switch verificationResult {
                 case .verified(let transaction):
                     await transaction.finish()
-                case .unverified(_, let error):
-                    print("Unverified transaction update: \(error.localizedDescription)")
+                case .unverified:
+                    break
                 }
             }
         }

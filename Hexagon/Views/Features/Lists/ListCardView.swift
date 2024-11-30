@@ -1,19 +1,15 @@
-    //
-    //  ListCardView.swift
-    //  Hexagon
-    //
-    //  Created by Kieran Lynch on 29/08/2024.
-    //
+@preconcurrency import SwiftUI
+@preconcurrency import CoreData
+@preconcurrency 
+import os
 
-import SwiftUI
-import CoreData
-import HexagonData
 
 struct ListCardView: View {
     @Environment(\.appTintColor) var appTintColor
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var taskList: TaskList
-    @EnvironmentObject private var reminderService: ReminderService
+    @EnvironmentObject private var fetchingService: ReminderFetchingServiceUI
+    @EnvironmentObject private var modificationService: ReminderModificationService
     @EnvironmentObject private var listService: ListService
     @Environment(\.colorScheme) var colorScheme
     @State private var isTargeted = false
@@ -21,22 +17,24 @@ struct ListCardView: View {
     @State private var showEditView = false
     var onEdit: () -> Void
     var onDelete: () -> Void
-
+    
+    private let cardHeight: CGFloat = 40
+    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.hexagon", category: "ListCardView")
+    
     var body: some View {
         mainContent
-            .padding(.vertical, 12)
-            .padding(.horizontal, 16)
+            .frame(height: cardHeight)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 8)
             .adaptiveBackground()
             .cornerRadius(Constants.UI.cornerRadius)
             .adaptiveShadow()
             .scaleEffect(isTargeted ? 1.05 : 1.0)
             .animation(.spring(), value: isTargeted)
-            .onAppear {
-                Task {
-                    await updateReminderCount()
-                }
+            .task {
+                await updateReminderCount()
             }
-            .onChange(of: taskList.reminders?.count, initial: false) { _, _ in
+            .onChange(of: taskList.reminders?.count) { _, _ in
                 Task {
                     await updateReminderCount()
                 }
@@ -46,7 +44,7 @@ struct ListCardView: View {
             .accessibilityLabel(taskList.name ?? "Unnamed List")
             .accessibilityHint("Double-tap to view list options")
     }
-
+    
     private var mainContent: some View {
         HStack {
             listIcon
@@ -54,7 +52,7 @@ struct ListCardView: View {
             Spacer()
         }
     }
-
+    
     private var listIcon: some View {
         taskIconView(
             systemName: taskList.symbol ?? "list.bullet",
@@ -62,8 +60,10 @@ struct ListCardView: View {
             hint: "Icon representing the task list",
             tintColor: Color(UIColor.color(data: taskList.colorData ?? Data()) ?? .gray)
         )
+        .font(.system(size: 24))
+        .padding(.horizontal, 8)
     }
-
+    
     private var listDetails: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(taskList.name ?? "Unnamed List")
@@ -71,7 +71,7 @@ struct ListCardView: View {
                 .font(.headline)
                 .accessibilityLabel("List name")
                 .accessibilityValue(taskList.name ?? "Unnamed List")
-
+            
             Text("\(reminderCount) tasks")
                 .adaptiveColors()
                 .font(.caption)
@@ -79,7 +79,7 @@ struct ListCardView: View {
                 .accessibilityValue("\(reminderCount) tasks")
         }
     }
-
+    
     private var contextMenuContent: some View {
         Group {
             Button(action: onEdit) {
@@ -96,6 +96,9 @@ struct ListCardView: View {
     }
 
     private func updateReminderCount() async {
-            reminderCount = await listService.getRemindersCountForList(taskList)
+        let count = await fetchingService.getIncompleteRemindersCount(for: taskList)
+        await MainActor.run {
+            reminderCount = count
         }
+    }
 }

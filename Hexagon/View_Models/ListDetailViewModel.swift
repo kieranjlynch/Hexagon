@@ -3,301 +3,444 @@
 //  Hexagon
 //
 //  Created by Kieran Lynch on 17/09/2024.
-//
 
 import SwiftUI
 import CoreData
-import HexagonData
-import DragAndDrop
-import CoreGraphics
+import os
+import Combine
 
-public enum DropTargetType: Equatable {
-    case subheading(UUID)
-    case noSubheading
+struct ListDetailViewState: Equatable {
+    var reminders: [Reminder] = []
+    var subHeadings: [SubHeading] = []
+    var listSymbol: String = ""
 }
 
-public class ListDropReceiver: DropReceiver {
-    public let targetType: DropTargetType
-    public var dropArea: CGRect?
-
-    public init(targetType: DropTargetType) {
-        self.targetType = targetType
-        self.dropArea = nil
-    }
-
-    public func updateDropArea(with newDropArea: CGRect) {
-        self.dropArea = newDropArea
-    }
-
-    public func getDropArea() -> CGRect? {
-        return dropArea
-    }
-}
-
-public class ListDetailViewModel: ObservableObject, DropReceivableObservableObject {
-    public typealias DropReceivable = ListDropReceiver
-
-    public func setDropArea(_ dropArea: CGRect, on dropReceiver: DropReceivable) {
-        dropReceiver.updateDropArea(with: dropArea)
-    }
+@MainActor
+final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging, ErrorHandling, TaskManaging, LoggerProvider {
+    typealias State = ListDetailViewState
     
-    @Published public var subHeadings: [SubHeading] = []
-    @Published public var reminders: [Reminder] = []
-    @Published public var error: IdentifiableError?
-    @Published public var listSymbol: String
-    @Published public var isDraggingReminder = false
-    @Published public var isDraggingSubheading = false
+    @Published private(set) var viewState: ListDetailViewState
+    @Published var error: IdentifiableError?
+    @Published var state: ViewState<ListDetailViewState> = .idle
     
-    private let managedContext: NSManagedObjectContext
-    public var context: NSManagedObjectContext {
-        managedContext
-    }
+    var activeTasks = Set<Task<Void, Never>>()
+    var cancellables = Set<AnyCancellable>()
     
-    public let reminderService: ReminderService
-    public let locationService: LocationService
-    private let subheadingService: SubheadingService
-    public let taskList: TaskList
+    let logger: Logger
     
-    private var notificationObserver: NSObjectProtocol?
-    internal var dropReceivers: [DropReceivable] = []
-    private var subheadingDropAreas: [NSManagedObjectID: DropReceivable] = [:]
-    private var noSubheadingReceiver: DropReceivable?
+    let taskList: TaskList
+    var reminders: [Reminder] { viewState.reminders }
+    var listSymbol: String { viewState.listSymbol }
     
-    public init(context: NSManagedObjectContext, taskList: TaskList, reminderService: ReminderService, locationService: LocationService) {
-        self.managedContext = context
+    private let reminderService: ReminderServiceFacade
+    private let subHeadingService: SubHeadingServiceFacade
+    private let performanceMonitor: PerformanceMonitoring?
+    private weak var parentViewModel: ListDetailViewModel?
+    
+    private var isSearchSetupComplete = false
+    private var isLoadingContent = false
+    private var isInitialized = false
+    
+    init(
+        taskList: TaskList,
+        reminderService: ReminderServiceFacade,
+        subHeadingService: SubHeadingServiceFacade,
+        performanceMonitor: PerformanceMonitoring? = nil,
+        parentViewModel: ListDetailViewModel? = nil
+    ) {
         self.taskList = taskList
         self.reminderService = reminderService
-        self.locationService = locationService
-        self.subheadingService = SubheadingService()
-        self.listSymbol = taskList.symbol ?? "list.bullet"
+        self.subHeadingService = subHeadingService
+        self.performanceMonitor = performanceMonitor
+        self.parentViewModel = parentViewModel
+        self.viewState = ListDetailViewState()
+        self.logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "ListDetailViewModel")
         
-        setupNotificationObserver()
-    }
-    
-    deinit {
-        if let observer = notificationObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-    
-    func setupDropReceivers() {
-        var receivers: [DropReceivable] = []
-        subheadingDropAreas.removeAll()
-        
-        for subheading in subHeadings {
-            guard let subheadingID = subheading.subheadingID else { continue }
-            let receiver = ListDropReceiver(targetType: .subheading(subheadingID))
-            subheadingDropAreas[subheading.objectID] = receiver
-            receivers.append(receiver)
-        }
-        
-        let noSubheadingReceiver = ListDropReceiver(targetType: .noSubheading)
-        self.noSubheadingReceiver = noSubheadingReceiver
-        receivers.append(noSubheadingReceiver)
-        
-        dropReceivers = receivers
-    }
-    
-    func dropReceiverForSubheading(_ subheading: SubHeading) -> DropReceivable {
-        return subheadingDropAreas[subheading.objectID] ?? ListDropReceiver(targetType: .noSubheading)
-    }
-    
-    func dropReceiverForNoSubheading() -> DropReceivable {
-        return noSubheadingReceiver ?? ListDropReceiver(targetType: .noSubheading)
-    }
-    
-    func setDraggingReminder(_ isDragging: Bool) {
-        isDraggingReminder = isDragging
-    }
-    
-    func setDraggingSubheading(_ isDragging: Bool) {
-        isDraggingSubheading = isDragging
-    }
-    
-    func getDropableState(at position: CGPoint) -> Bool {
-        return dropReceivers.contains { $0.dropArea?.contains(position) ?? false }
-    }
-    
-    func getDropableStateForSubheading(at position: CGPoint) -> Bool {
-        guard let dropReceiver = dropReceivers.first(where: { $0.dropArea?.contains(position) ?? false }) else {
-            return false
-        }
-        switch dropReceiver.targetType {
-        case .subheading:
-            return true
-        case .noSubheading:
-            return false
-        }
-    }
-    
-    func handleTaskDrop(reminder: Reminder, at position: CGPoint) {
-        if let dropReceiver = dropReceivers.first(where: { $0.dropArea?.contains(position) ?? false }) {
-            switch dropReceiver.targetType {
-            case .subheading(let subheadingID):
-                if let targetSubheading = subHeadings.first(where: { $0.subheadingID == subheadingID }) {
-                    reminder.subHeading = targetSubheading
-                }
-            case .noSubheading:
-                reminder.subHeading = nil
-            }
-            Task { @MainActor in
-                saveContext()
-            }
-        }
-    }
-    
-    func handleSubheadingDrop(subheading: SubHeading, at position: CGPoint) {
-        if let dropReceiver = dropReceivers.first(where: { $0.dropArea?.contains(position) ?? false }) {
-            switch dropReceiver.targetType {
-            case .subheading(let targetID):
-                guard let targetSubheading = subHeadings.first(where: { $0.subheadingID == targetID }),
-                      let currentIndex = subHeadings.firstIndex(of: subheading),
-                      let newIndex = subHeadings.firstIndex(of: targetSubheading) else { return }
-                
-                let adjustedNewIndex = currentIndex < newIndex ? newIndex - 1 : newIndex
-                
-                if currentIndex != adjustedNewIndex {
-                    let movedSubheading = subHeadings.remove(at: currentIndex)
-                    subHeadings.insert(movedSubheading, at: adjustedNewIndex)
-                    
-                    for (index, subheading) in subHeadings.enumerated() {
-                        subheading.order = Int16(index)
-                    }
-                    
-                    Task { @MainActor in
-                        saveContext()
-                    }
-                }
-            case .noSubheading:
-                return
-            }
-        }
-    }
-    
-    @MainActor
-    private func saveContext() {
-        do {
-            try managedContext.save()
-            objectWillChange.send()
-        } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
-        }
-    }
-    
-    public func filteredReminders(for subHeading: SubHeading?, searchText: String, tokens: [ReminderToken]) -> [Reminder] {
-        let reminders = subHeading == nil ?
-        self.reminders.filter { $0.subHeading == nil } :
-        self.reminders.filter { $0.subHeading == subHeading }
-        
-        return reminders.filter { reminder in
-            var matches = true
-            if !searchText.isEmpty {
-                let titleMatch = reminder.title?.localizedCaseInsensitiveContains(searchText) ?? false
-                let notesMatch = reminder.notes?.localizedCaseInsensitiveContains(searchText) ?? false
-                matches = titleMatch || notesMatch
-            }
-            return matches
-        }
-    }
-    
-    public func performSearch(_ searchText: String) {
-        objectWillChange.send()
-    }
-    
-    private func setupNotificationObserver() {
-        notificationObserver = NotificationCenter.default.addObserver(
-            forName: .reminderAdded,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
+        if parentViewModel == nil {
+            print("INFO: Initializing root ListDetailViewModel for list: \(taskList.name ?? "unnamed")")
+            print("INFO: List ID: \(taskList.listID?.uuidString ?? "no ID")")
+            setupObservers()
             Task {
-                await self?.refreshRemindersAndSubHeadings()
+                await loadInitialState()
             }
         }
     }
     
-    private func refreshRemindersAndSubHeadings() async {
-        await loadContent()
+    // MARK: - ViewModel Lifecycle Methods
+    
+    func viewDidLoad() {
+        // Implement any setup needed when the view loads
     }
     
-    @MainActor
-    public func loadContent() async {
+    func viewWillAppear() {
+        // Implement any actions needed when the view appears
+    }
+    
+    func viewWillDisappear() {
+        // Implement any cleanup needed when the view disappears
+    }
+    
+    // MARK: - ViewStateManaging Methods
+    
+    func updateViewState(_ newState: ViewState<ListDetailViewState>) {
+        state = newState
+        if case .error(let message) = newState {
+            error = IdentifiableError(message: message)
+        }
+    }
+    
+    // MARK: - ErrorHandling Method
+    
+    func handleError(_ error: Error) {
+        self.error = IdentifiableError(error: error)
+    }
+    
+    // MARK: - Data Loading
+    
+    private func setupObservers() {
+        let notificationNames: [Notification.Name] = [
+            .NSManagedObjectContextDidSave,
+            .reminderUpdated,
+            .reminderCreated,
+            .NSManagedObjectContextObjectsDidChange
+        ]
+        
+        for name in notificationNames {
+            NotificationCenter.default.publisher(for: name)
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        await self?.reloadRemindersState()
+                    }
+                }
+                .store(in: &cancellables)
+        }
+    }
+    
+    private func loadInitialState() async {
+        guard !isInitialized else { return }
+        isInitialized = true
+        
         do {
-            let fetchedReminders = try await reminderService.getRemindersForList(taskList)
-            let fetchedSubHeadings = try await subheadingService.fetchSubHeadings(for: taskList)
+            async let reminders = loadContent()
+            async let subHeadings = subHeadingService.fetchSubHeadings(for: taskList)
             
-            self.reminders = fetchedReminders
-            self.subHeadings = fetchedSubHeadings
-            setupDropReceivers()
+            let (loadedReminders, loadedSubHeadings) = try await (reminders, subHeadings)
+            viewState.reminders = loadedReminders
+            viewState.subHeadings = loadedSubHeadings
+            updateViewState(.loaded(viewState))
         } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
+            handleError(error)
         }
     }
     
-    public func toggleCompletion(_ reminder: Reminder) async {
+    func loadContent() async throws -> [Reminder] {
+        guard !isLoadingContent else { return [] }
+        isLoadingContent = true
+        defer { isLoadingContent = false }
+        
+        print("INFO: Loading content for list: \(taskList.name ?? "unknown")")
+        await performanceMonitor?.startOperation("LoadContent")
+        defer { Task { await performanceMonitor?.endOperation("LoadContent") } }
+        
+        let fetchedReminders = try await reminderService.fetchReminders(for: taskList, isCompleted: false)
+        return fetchedReminders
+    }
+    
+    // MARK: - Data Handling
+    
+    var subHeadingsArray: [SubHeading] {
+        if let parent = parentViewModel {
+            return parent.subHeadingsArray
+        }
+        return viewState.subHeadings.sorted { ($0.order, $0.title ?? "") < ($1.order, $1.title ?? "") }
+    }
+    
+    func sortReminders(by sortType: ReminderSortType) async {
         do {
-            try await reminderService.updateReminderCompletionStatus(reminder: reminder, isCompleted: !reminder.isCompleted)
-            await loadContent()
+            let reminders = try await reminderService.fetchSortedReminders(for: taskList, sortType: sortType)
+            await MainActor.run {
+                viewState.reminders = reminders
+                updateViewState(.loaded(viewState))
+            }
         } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
+            handleError(error)
+            print("ERROR: Failed to sort reminders: \(error.localizedDescription)")
         }
     }
     
-    public func updateSubHeading(_ subHeading: SubHeading) async throws {
+    func toggleCompletion(_ reminder: Reminder) async {
         do {
-            try await subheadingService.updateSubHeading(subHeading, title: subHeading.title ?? "")
-            await loadContent()
+            let updatedReminder = try await reminderService.toggleCompletion(reminder)
+            if let index = reminders.firstIndex(of: reminder) {
+                if updatedReminder.isCompleted {
+                    viewState.reminders.remove(at: index)
+                } else {
+                    viewState.reminders[index] = updatedReminder
+                }
+            }
+            NotificationCenter.default.post(name: .reminderUpdated, object: nil)
         } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
-            throw error
+            handleError(error)
         }
     }
     
-    public func deleteSubHeading(_ subHeading: SubHeading) async throws {
+    func setupSearchViewModel(_ searchViewModel: SearchViewModel) {
+        guard !isSearchSetupComplete else { return }
+        isSearchSetupComplete = true
+        
+        Task { @MainActor in
+            let predicate = NSPredicate(format: "list == %@ AND isCompleted == NO", taskList)
+            await searchViewModel.updateBasePredicate(predicate)
+        }
+    }
+    
+    func filteredReminders(for subHeading: SubHeading?, searchText: String, tokens: [ReminderToken]) -> [Reminder] {
+        var predicates: [NSPredicate] = []
+        
+        predicates.append(NSPredicate(format: "isCompleted == NO"))
+        
+        if let subHeading = subHeading {
+            predicates.append(NSPredicate(format: "subHeading == %@", subHeading))
+        } else {
+            predicates.append(NSPredicate(format: "subHeading == nil"))
+        }
+        
+        if !searchText.isEmpty {
+            let searchPredicate = NSPredicate(
+                format: "title CONTAINS[cd] %@ OR notes CONTAINS[cd] %@",
+                searchText, searchText
+            )
+            predicates.append(searchPredicate)
+        }
+        
+        for token in tokens {
+            switch token {
+            case .priority(let value):
+                predicates.append(NSPredicate(format: "priority == %d", value))
+            case .tag(_, let name):
+                predicates.append(NSPredicate(format: "ANY tags.name == %@", name))
+            @unknown default:
+                break
+            }
+        }
+        
+        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        
+        return reminders
+            .filter { reminder in compoundPredicate.evaluate(with: reminder) }
+            .sorted { $0.order < $1.order }
+    }
+    
+    func fetchExistingObject<T: NSManagedObject>(with objectID: NSManagedObjectID, as type: T.Type) async -> T? {
+        return await reminderService.existingObject(with: objectID, as: type)
+    }
+    
+    // MARK: - Move and Reorder Items
+    
+    func moveItem(_ item: ListItemTransfer, toIndex targetIndex: Int, underSubHeading targetSubHeading: SubHeading?) {
+        print("DEBUG: -------- Moving Item --------")
+        print("DEBUG: Item type: \(item.type)")
+        print("DEBUG: Target index: \(targetIndex)")
+        print("DEBUG: Target subheading: \(targetSubHeading?.title ?? "none")")
+        
+        logCurrentState(operation: "State Before Move")
+        
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        
+        switch item.type {
+        case .reminder:
+            moveReminder(withID: item.id, toIndex: targetIndex, underSubHeading: targetSubHeading)
+        case .subheading:
+            moveSubheading(withID: item.id, toIndex: targetIndex)
+        case .group:
+            print("DEBUG: Group moves not implemented")
+        @unknown default:
+            print("DEBUG: Unknown item type")
+            fatalError("Unknown item type encountered")
+        }
+        
+        try? context.save()
+        updateViewState()
+        
+        logCurrentState(operation: "State After Move")
+    }
+    
+    private func moveReminder(withID id: UUID, toIndex targetIndex: Int, underSubHeading targetSubHeading: SubHeading?) {
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "reminderID == %@", id as CVarArg)
+        fetchRequest.fetchLimit = 1
+        
+        guard let reminder = try? context.fetch(fetchRequest).first else {
+            print("DEBUG: Failed to fetch reminder with ID: \(id)")
+            return
+        }
+        
+        if reminder.subHeading == targetSubHeading {
+            reorderReminderWithinSection(reminder, toIndex: targetIndex, inSubHeading: targetSubHeading)
+        } else {
+            moveReminderAcrossSections(reminder, toIndex: targetIndex, toSubHeading: targetSubHeading)
+        }
+        
+        try? context.save()
+    }
+    
+    private func moveReminderAcrossSections(_ reminder: Reminder, toIndex targetIndex: Int, toSubHeading targetSubHeading: SubHeading?) {
+        if let sourceSubHeading = reminder.subHeading {
+            sourceSubHeading.removeFromReminders(reminder)
+            
+            let sourceReminders = fetchCurrentReminders(for: sourceSubHeading)
+            for (index, item) in sourceReminders.enumerated() {
+                if item != reminder {
+                    item.order = Int16(index * 1000)
+                }
+            }
+        } else {
+            let mainReminders = fetchCurrentReminders(for: nil)
+            for (index, item) in mainReminders.enumerated() {
+                if item != reminder {
+                    item.order = Int16(index * 1000)
+                }
+            }
+        }
+        
+        let targetReminders = fetchCurrentReminders(for: targetSubHeading)
+        var updatedTargetReminders = targetReminders.filter { $0 != reminder }
+        
+        let insertIndex = min(targetIndex, updatedTargetReminders.count)
+        updatedTargetReminders.insert(reminder, at: insertIndex)
+        
+        reminder.subHeading = targetSubHeading
+        reminder.list = taskList
+        
+        for (index, item) in updatedTargetReminders.enumerated() {
+            item.order = Int16(index * 1000)
+        }
+        
+        if let targetSubHeading = targetSubHeading {
+            targetSubHeading.addToReminders(reminder)
+        }
+    }
+    
+    private func updateViewState() {
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        let reminderFetchRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
+        reminderFetchRequest.predicate = NSPredicate(format: "list == %@ AND isCompleted == %@", taskList, NSNumber(value: false))
+        reminderFetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Reminder.order, ascending: true)]
+        
+        if let updatedReminders = try? context.fetch(reminderFetchRequest) {
+            viewState.reminders = updatedReminders
+            self.objectWillChange.send()
+            NotificationCenter.default.post(name: .reminderUpdated, object: nil)
+        }
+    }
+    
+    private func reorderReminderWithinSection(_ reminder: Reminder, toIndex targetIndex: Int, inSubHeading subHeading: SubHeading?) {
+        let currentReminders = fetchCurrentReminders(for: subHeading)
+        
+        guard let currentIndex = currentReminders.firstIndex(where: { $0.reminderID == reminder.reminderID }) else {
+            return
+        }
+        
+        if currentIndex == targetIndex {
+            return
+        }
+        
+        var reorderedReminders = currentReminders
+        reorderedReminders.remove(at: currentIndex)
+        let finalIndex = min(targetIndex, reorderedReminders.count)
+        reorderedReminders.insert(reminder, at: finalIndex)
+        
+        for (index, item) in reorderedReminders.enumerated() {
+            item.order = Int16(index * 1000)
+        }
+        
+        if let subHeading = subHeading {
+            subHeading.removeFromReminders(reminder)
+            subHeading.addToReminders(reminder)
+        }
+    }
+    
+    private func moveSubheading(withID id: UUID, toIndex targetIndex: Int) {
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<SubHeading> = SubHeading.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "subheadingID == %@", id as CVarArg)
+        fetchRequest.fetchLimit = 1
+        
+        guard let subHeading = try? context.fetch(fetchRequest).first else {
+            return
+        }
+        
+        let currentSubHeadings = Array(taskList.subHeadings?.allObjects as? [SubHeading] ?? [])
+            .sorted { $0.order < $1.order }
+        
+        guard let currentIndex = currentSubHeadings.firstIndex(where: { $0.subheadingID == subHeading.subheadingID }) else {
+            return
+        }
+        
+        if currentIndex == targetIndex {
+            return
+        }
+        
+        var updatedSubHeadings = currentSubHeadings
+        updatedSubHeadings.remove(at: currentIndex)
+        
+        let finalIndex = min(targetIndex, updatedSubHeadings.count)
+        updatedSubHeadings.insert(subHeading, at: finalIndex)
+        
+        for (index, sub) in updatedSubHeadings.enumerated() {
+            let newOrder = Int16(index * 1000)
+            sub.order = newOrder
+        }
+        
+        taskList.removeFromSubHeadings(subHeading)
+        taskList.addToSubHeadings(subHeading)
+        
+        try? context.save()
+        updateViewState()
+    }
+    
+    private func fetchCurrentReminders(for subHeading: SubHeading?) -> [Reminder] {
+        if let subHeading = subHeading {
+            return (subHeading.reminders?.allObjects as? [Reminder] ?? [])
+                .filter { $0.isCompleted == false }
+                .sorted { $0.order < $1.order }
+        } else {
+            return taskList.sortedReminders
+                .filter { $0.subHeading == nil && $0.isCompleted == false }
+                .sorted { $0.order < $1.order }
+        }
+    }
+    
+    private func logCurrentState(operation: String) {
+        print("\nDEBUG: -------- \(operation) --------")
+        print("\nDEBUG: Subheadings:")
+        let subheadings = subHeadingsArray
+        for (index, subheading) in subheadings.enumerated() {
+            print("DEBUG: [\(index)] \(subheading.title ?? "untitled") (Order: \(subheading.order))")
+            let subheadingReminders = fetchCurrentReminders(for: subheading)
+            subheadingReminders.forEach { reminder in
+                print("DEBUG:     - \(reminder.title ?? "untitled") (Order: \(reminder.order))")
+            }
+        }
+        
+        print("\nDEBUG: Main section (no subheading):")
+        let mainReminders = fetchCurrentReminders(for: nil)
+        mainReminders.forEach { reminder in
+            print("DEBUG: - \(reminder.title ?? "untitled") (Order: \(reminder.order))")
+        }
+        print("\nDEBUG: --------------------------------\n")
+    }
+    
+    // MARK: - Reload State
+    
+    func reloadRemindersState() async {
         do {
-            try await subheadingService.deleteSubHeading(subHeading)
-            await loadContent()
+            let reminders = try await loadContent()
+            viewState.reminders = reminders
         } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
-            throw error
+            handleError(error)
         }
-    }
-    
-    public func deleteReminder(_ reminder: Reminder) async {
-        do {
-            try await reminderService.deleteReminder(reminder)
-            await loadContent()
-        } catch {
-            self.error = IdentifiableError(message: error.localizedDescription)
-        }
-    }
-    
-    @MainActor
-    public func setupSearchViewModel(_ searchViewModel: SearchViewModel) {
-        searchViewModel.setup(reminderService: reminderService, viewContext: context)
-    }
-    
-    // MARK: - DragAndDrop Methods
-    
-    func onDraggedReminder(reminder: Dragable, position: CGPoint) -> DragState {
-        self.isDraggingReminder = true
-        return self.getDropableState(at: position) ? .accepted : .rejected
-    }
-    
-    func onDroppedReminder(reminder: Dragable, position: CGPoint) -> Bool {
-        self.isDraggingReminder = false
-        self.handleTaskDrop(reminder: reminder as! Reminder, at: position)
-        return true
-    }
-    
-    func onDraggedSubheading(position: CGPoint) -> DragState {
-        self.isDraggingSubheading = true
-        return self.getDropableStateForSubheading(at: position) ? .accepted : .rejected
-    }
-    
-    func onDroppedSubheading(subheading: SubHeading, position: CGPoint) -> Bool {
-        self.isDraggingSubheading = false
-        self.handleSubheadingDrop(subheading: subheading, at: position)
-        return true
     }
 }

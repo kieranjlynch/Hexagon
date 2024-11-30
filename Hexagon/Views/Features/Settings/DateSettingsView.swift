@@ -9,21 +9,21 @@ import SwiftUI
 
 struct DateSettingsView: View {
     @AppStorage("dateFormat") private var dateFormat = DateFormat.ddmmyy.rawValue
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         Form {
-            Section(header: Text("Date Format")) {
-                Picker("Select Date Format", selection: $dateFormat) {
-                    ForEach(DateFormat.allCases, id: \.self) { format in
-                        Text(format.description).tag(format.rawValue)
-                    }
+            Picker("Select Date Format", selection: $dateFormat) {
+                ForEach(DateFormat.allCases, id: \.self) { format in
+                    Text(format.description).tag(format.rawValue)
                 }
-                .pickerStyle(WheelPickerStyle()) 
             }
+            .pickerStyle(WheelPickerStyle())
         }
-        .navigationTitle("Date Settings")
+        .navigationTitle("Date Format")
         .onChange(of: dateFormat) { _, newValue in
             DateFormatter.updateSharedDateFormatter()
+            NotificationCenter.default.post(name: .dateFormatChanged, object: nil)
         }
     }
 }

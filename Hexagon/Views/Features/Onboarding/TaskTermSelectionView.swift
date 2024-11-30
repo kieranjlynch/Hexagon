@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct TaskTermSelectionView: View {
     @AppStorage("preferredTaskType") private var preferredTaskType: String = "Tasks"
     @State private var selectedType: String?
@@ -38,8 +39,11 @@ struct TaskTermSelectionView: View {
                 title: "Save",
                 action: {
                     if let selected = selectedType {
-                        preferredTaskType = selected
-                        onContinue()
+                        Task { @MainActor in
+                            preferredTaskType = selected
+                            try? await Task.sleep(nanoseconds: 100_000_000) 
+                            onContinue()
+                        }
                     }
                 },
                 style: selectedType != nil ? .primary : .secondary

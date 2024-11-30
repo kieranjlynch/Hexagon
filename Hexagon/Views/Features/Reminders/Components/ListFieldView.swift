@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import HexagonData
+
 
 struct ListFieldView: View {
     @Binding var selectedList: TaskList?
@@ -25,6 +25,7 @@ struct ListFieldView: View {
                 }
                 .foregroundColor(colorScheme == .dark ? .white : .black)
             }
+            .buttonStyle(PlainButtonStyle())
             Spacer()
             if let selectedList = selectedList {
                 Text(selectedList.name ?? "")

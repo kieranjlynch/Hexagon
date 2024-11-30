@@ -7,10 +7,8 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import MapKit
-import CoreLocation
 import Foundation
-import HexagonData
+
 
 extension View {
     func newTagAlert(
@@ -115,25 +113,7 @@ extension View {
             }
         }
     }
-    
-    func mapView(currentLocation: CLLocationCoordinate2D?, selectedLocation: Binding<IdentifiableMapItem?>) -> some View {
-        Group {
-            if let currentLocation = currentLocation {
-                Map(position: .constant(.region(MKCoordinateRegion(center: currentLocation, span: Constants.UI.mapSpan)))) {
-                    UserAnnotation()
-                    if let selectedLocation = selectedLocation.wrappedValue {
-                        Annotation("Selected Location", coordinate: selectedLocation.mapItem.placemark.coordinate) {
-                            LocationPin(coordinate: selectedLocation.mapItem.placemark.coordinate)
-                        }
-                    }
-                }
-            } else {
-                Text(Constants.Strings.fetchingLocation)
-            }
-        }
-        .frame(height: UIScreen.main.bounds.height * Constants.UI.mapHeight)
-    }
-    
+
     func standardListButton(
         text: String,
         isSelected: Bool,
@@ -211,12 +191,14 @@ extension View {
     func completionToggleButton(isCompleted: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                .frame(width: 24, height: 24)
-                .padding(.leading, 8)
-                .padding(.trailing, 12)
+                .font(.title2)
+                .foregroundColor(isCompleted ? .green : .gray)
+                .contentShape(Rectangle())
         }
-        .accessibilityLabel(isCompleted ? "Mark as incomplete" : "Mark as complete")
-        .accessibilityHint("Double-tap to toggle completion status")
+        .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .animation(.easeInOut(duration: Constants.Animation.quickDuration), value: isCompleted)
     }
     
     func adaptiveForegroundAndBackground() -> some View {
@@ -276,23 +258,6 @@ extension View {
     }
 }
 
-extension DateFormatter {
-    static var sharedDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        updateSharedDateFormatter(formatter: formatter)
-        return formatter
-    }()
-    
-    static func updateSharedDateFormatter() {
-        updateSharedDateFormatter(formatter: sharedDateFormatter)
-    }
-    
-    private static func updateSharedDateFormatter(formatter: DateFormatter) {
-        let storedFormat = UserDefaults.standard.string(forKey: "dateFormat") ?? DateFormat.ddmmyy.rawValue
-        formatter.dateFormat = storedFormat
-    }
-}
-
 enum DateFormat: String, CaseIterable {
     case yymmdd = "yy/MM/dd"
     case ddmmyy = "dd/MM/yy"
@@ -305,22 +270,32 @@ enum DateFormat: String, CaseIterable {
     
     var description: String {
         switch self {
-        case .yymmdd:
-            return "YY/MM/DD"
-        case .ddmmyy:
-            return "DD/MM/YY"
-        case .mmddyy:
-            return "MM/DD/YY"
-        case .yyyymmdd:
-            return "YYYYMMDD"
-        case .ddmmyyyy:
-            return "DD/MM/YYYY"
-        case .mmddyyyy:
-            return "MM/DD/YYYY"
-        case .ddmmmyy:
-            return "DD MMM YY"
-        case .ddmmmyyyy:
-            return "DD MMM YYYY"
+        case .yymmdd: return "YY/MM/DD"
+        case .ddmmyy: return "DD/MM/YY"
+        case .mmddyy: return "MM/DD/YY"
+        case .yyyymmdd: return "YYYYMMDD"
+        case .ddmmyyyy: return "DD/MM/YYYY"
+        case .mmddyyyy: return "MM/DD/YYYY"
+        case .ddmmmyy: return "DD MMM YY"
+        case .ddmmmyyyy: return "DD MMM YYYY"
         }
     }
 }
+
+extension DateFormatter {
+    static let sharedDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
+    
+    static func updateSharedDateFormatter() {
+        if let formatString = UserDefaults.standard.string(forKey: "dateFormat") {
+            sharedDateFormatter.dateFormat = DateFormat(rawValue: formatString)?.rawValue ?? "dd MMM yyyy"
+        } else {
+            sharedDateFormatter.dateFormat = "dd MMM yyyy" 
+        }
+    }
+}
+

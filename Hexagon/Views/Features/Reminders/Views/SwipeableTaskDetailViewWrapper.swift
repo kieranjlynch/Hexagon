@@ -6,19 +6,22 @@
 //
 
 import SwiftUI
-import HexagonData
+
+import CoreData
 
 struct SwipeableTaskDetailViewWrapper: View {
     @Binding var reminders: [Reminder]
     @Binding var currentIndex: Int
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var reminderService: ReminderService
+    @EnvironmentObject var fetchingService: ReminderFetchingServiceUI
+    @EnvironmentObject var modificationService: ReminderModificationService
+    @Environment(\.managedObjectContext) var context: NSManagedObjectContext
     
     var body: some View {
         Group {
             if !reminders.isEmpty {
                 SwipeableTaskDetailView(
-                    reminders: $reminders,
+                    reminders: reminders,
                     currentIndex: $currentIndex
                 )
             } else {
