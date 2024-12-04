@@ -138,18 +138,13 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
         update(&state)
         
         if oldTitle != state.title {
-            print("📝 Title updated: '\(oldTitle)' -> '\(state.title)'")
         }
         if oldStartDate != state.startDate {
-            print("📅 Start date updated: \(oldStartDate) -> \(state.startDate)")
         }
         if oldEndDate != state.endDate {
-            print("📅 End date updated: \(String(describing: oldEndDate)) -> \(String(describing: state.endDate))")
         }
         if oldPriority != state.priority {
-            print("⭐️ Priority updated: \(oldPriority) -> \(state.priority)")
         }
-        
         viewState = .loaded(state)
         cachedState = nil
     }
@@ -159,13 +154,11 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
             let currentTitle = currentViewState.title
             if currentTitle != lastReadTitle {
                 lastReadTitle = currentTitle
-                print("📖 Title value: '\(currentTitle)'")
             }
             return currentTitle
         }
         set {
             if newValue != currentViewState.title {
-                print("✏️ Setting title: '\(newValue)'")
                 updateState { $0.title = newValue }
             }
         }
@@ -176,13 +169,11 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
             let currentDate = currentViewState.startDate
             if currentDate != lastReadStartDate {
                 lastReadStartDate = currentDate
-                print("📅 Start date value: \(currentDate)")
             }
             return currentDate
         }
         set {
             if newValue != currentViewState.startDate {
-                print("📅 Setting start date: \(newValue)")
                 updateState { state in
                     state.startDate = newValue
                     if shouldSyncEndDate {
@@ -198,13 +189,11 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
             let currentDate = currentViewState.endDate
             if currentDate != lastReadEndDate {
                 lastReadEndDate = currentDate
-                print("📅 End date value: \(String(describing: currentDate))")
             }
             return currentDate
         }
         set {
             if newValue != currentViewState.endDate {
-                print("📅 Setting end date: \(String(describing: newValue))")
                 updateState { state in
                     state.endDate = newValue
                     shouldSyncEndDate = false
@@ -218,13 +207,11 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
             let currentPriority = currentViewState.priority
             if currentPriority != lastReadPriority {
                 lastReadPriority = currentPriority
-                print("⭐️ Priority value: \(currentPriority)")
             }
             return currentPriority
         }
         set {
             if newValue != currentViewState.priority {
-                print("⭐️ Setting priority: \(newValue)")
                 updateState { $0.priority = newValue }
             }
         }
@@ -233,7 +220,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var selectedList: TaskList? {
         get { currentViewState.selectedList }
         set {
-            print("📋 Setting selected list: \(newValue?.name ?? "nil")")
             updateState { $0.selectedList = newValue }
         }
     }
@@ -241,7 +227,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var url: String {
         get { currentViewState.url }
         set {
-            print("🔗 Setting URL: \(newValue)")
             updateState { $0.url = newValue }
         }
     }
@@ -249,7 +234,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var selectedNotifications: Set<String> {
         get { currentViewState.notifications }
         set {
-            print("🔔 Setting notifications: \(newValue)")
             updateState { $0.selectedNotifications = newValue }
         }
     }
@@ -257,7 +241,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var selectedTags: Set<ReminderTag> {
         get { currentViewState.tags }
         set {
-            print("🏷️ Setting tags: \(newValue.map { $0.name ?? "" })")
             updateState { $0.selectedTags = newValue }
         }
     }
@@ -265,7 +248,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var notes: String {
         get { currentViewState.notes }
         set {
-            print("📝 Setting notes: \(newValue)")
             updateState { $0.notes = newValue }
         }
     }
@@ -273,7 +255,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var selectedPhotos: [UIImage] {
         get { currentViewState.photos }
         set {
-            print("📸 Setting photos count: \(newValue.count)")
             updateState { $0.selectedPhotos = newValue }
         }
     }
@@ -281,7 +262,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var isShowingImagePicker: Bool {
         get { currentViewState.isShowingImagePicker }
         set {
-            print("🖼️ Setting image picker visibility: \(newValue)")
             updateState { $0.isShowingImagePicker = newValue }
         }
     }
@@ -289,7 +269,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var isShowingNewTagAlert: Bool {
         get { currentViewState.isShowingNewTagAlert }
         set {
-            print("🏷️ Setting new tag alert visibility: \(newValue)")
             updateState { $0.isShowingNewTagAlert = newValue }
         }
     }
@@ -297,7 +276,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var newTagName: String {
         get { currentViewState.newTagName }
         set {
-            print("🏷️ Setting new tag name: \(newValue)")
             updateState { $0.newTagName = newValue }
         }
     }
@@ -305,7 +283,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var expandedPhotoIndex: Int? {
         get { currentViewState.expandedPhotoIndex }
         set {
-            print("🔍 Setting expanded photo index: \(String(describing: newValue))")
             updateState { $0.expandedPhotoIndex = newValue }
         }
     }
@@ -313,7 +290,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var voiceNoteData: Data? {
         get { currentViewState.voiceNoteData }
         set {
-            print("🎤 Setting voice note data: \(newValue != nil ? "present" : "nil")")
             updateState { $0.voiceNoteData = newValue }
         }
     }
@@ -321,7 +297,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var repeatOption: RepeatOption {
         get { currentViewState.repeatOption }
         set {
-            print("🔄 Setting repeat option: \(newValue.rawValue)")
             updateState { $0.repeatOption = newValue }
         }
     }
@@ -329,7 +304,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     var customRepeatInterval: Int {
         get { currentViewState.customRepeatInterval }
         set {
-            print("⏱️ Setting custom repeat interval: \(newValue)")
             updateState { $0.customRepeatInterval = newValue }
         }
     }
@@ -339,27 +313,19 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
     }
     
     func checkTaskLimits() async throws -> Bool {
-        print("📝 Checking task limits...")
-        
-        let state = currentViewState // Get all state at once
+        let state = currentViewState
         viewState = .loading
         
         do {
-            print("Checking start date limit for:", state.startDate)
             if try await !taskLimitChecker.canAddTaskWithStartDate(state.startDate, excluding: reminder?.reminderID) {
-                print("❌ Exceeded start date limit")
                 throw ReminderError.exceededStartDateLimit
             }
             
             if let endDate = state.endDate {
-                print("Checking end date limit for:", endDate)
                 if try await !taskLimitChecker.canAddTaskWithEndDate(endDate, excluding: reminder?.reminderID) {
-                    print("❌ Exceeded end date limit")
                     throw ReminderError.exceededEndDateLimit
                 }
             }
-            
-            print("✅ Task limits check passed")
             viewState = .loaded(AddReminderState(
                 title: state.title,
                 startDate: state.startDate,
@@ -376,35 +342,25 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
             ))
             return true
         } catch {
-            print("❌ Task limits check failed:", error.localizedDescription)
             viewState = .error(error.localizedDescription)
             throw error
         }
     }
     
     func saveReminder() async throws -> (Reminder, [String], [UIImage]) {
-        print("💾 Starting save reminder process")
         let state = currentViewState
-        print("Current title: \(state.title)")
-        
         guard !state.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            print("❌ Form invalid - empty title")
             throw ReminderError.emptyTitle
         }
-        
         viewState = .loading
-        print("State set to loading")
         
         do {
             guard try await checkTaskLimits() else {
-                print("❌ Failed task limits check")
                 throw ReminderError.exceededStartDateLimit
             }
-            
             let targetList = try await fetchTargetList()
             let adjustedEndDate = (state.endDate != state.startDate) ? state.endDate : nil
             
-            print("📝 Saving reminder with title: \(state.title)")
             let savedReminder = try await reminderCreator.saveReminder(
                 title: state.title,
                 startDate: state.startDate,
@@ -417,12 +373,10 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
                 tags: state.tags,
                 photos: state.photos,
                 notifications: state.notifications,
-                voiceNoteData: nil, // Add if needed
+                voiceNoteData: nil,
                 repeatOption: state.repeatOption.rawValue,
                 customRepeatInterval: Int16(state.customRepeatInterval)
             )
-            
-            print("✅ Successfully saved reminder with title: \(savedReminder.title ?? "")")
             viewState = .loaded(AddReminderState(
                 title: state.title,
                 startDate: state.startDate,
@@ -441,7 +395,6 @@ final class AddReminderViewModel: ViewModel, ObservableObject {
             self.reminder = savedReminder
             return (savedReminder, state.tags.compactMap { $0.name }, state.photos)
         } catch {
-            print("❌ Save failed with error: \(error.localizedDescription)")
             viewState = .error(error.localizedDescription)
             throw error
         }

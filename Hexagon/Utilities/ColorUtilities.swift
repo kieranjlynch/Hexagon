@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-// MARK: - Color Extensions
-
 extension Color {
 
     
@@ -21,8 +19,6 @@ extension Color {
         return (r, g, b, o)
     }
 }
-
-// MARK: - UIColor Extensions
 
 extension UIColor {
     static func fromHex(_ hex: String) -> UIColor? {

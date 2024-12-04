@@ -8,7 +8,6 @@
 import SwiftUI
 import AVFoundation
 
-
 extension View {
     @ViewBuilder
     func ifLet<T, Content: View>(_ optional: T?, @ViewBuilder content: (Self, T) -> Content) -> some View {

@@ -19,9 +19,9 @@ public class CalendarService: CalendarServiceProtocol {
     public static let shared = CalendarService()
     private let eventStore = EKEventStore()
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.klynch.Hexagon", category: "CalendarService")
-
+    
     public init() {}
-
+    
     public func requestCalendarAccess() async throws -> Bool {
         try await eventStore.requestFullAccessToEvents()
     }
@@ -30,7 +30,7 @@ public class CalendarService: CalendarServiceProtocol {
         let predicate = eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: nil)
         return eventStore.events(matching: predicate)
     }
-
+    
     public func saveTaskToCalendar(title: String, startDate: Date, duration: TimeInterval) async throws {
         let authorizationStatus = try await eventStore.requestFullAccessToEvents()
         guard authorizationStatus else {
@@ -47,7 +47,7 @@ public class CalendarService: CalendarServiceProtocol {
             logger.error("Invalid duration provided: \(duration)")
             throw CalendarError.invalidDuration
         }
-
+        
         do {
             let event = EKEvent(eventStore: eventStore)
             event.title = title

@@ -9,7 +9,6 @@ import SwiftUI
 import PhotosUI
 import CoreData
 
-
 public struct AddReminderView: View {
     @StateObject private var viewModel: AddReminderViewModel
     @EnvironmentObject public var fetchingService: ReminderFetchingServiceUI
@@ -98,124 +97,163 @@ public struct AddReminderView: View {
         }
     }
     
+    struct NotesButton: View {
+        @Binding var notes: String
+        var colorScheme: ColorScheme
+        @State private var showingNotesSheet = false
+        
+        var body: some View {
+            Button {
+                showingNotesSheet = true
+            } label: {
+                Text("Add Notes")
+                    .foregroundColor(.blue)
+            }
+            .sheet(isPresented: $showingNotesSheet) {
+                NotesSheetView(notes: $notes)
+            }
+        }
+    }
+    
+    struct GridFieldsView: View {
+        @Binding var startDate: Date
+        @Binding var endDate: Date?
+        @Binding var repeatOption: RepeatOption
+        @Binding var customRepeatInterval: Int
+        @Binding var selectedList: TaskList?
+        @Binding var priority: Int
+        @Binding var selectedNotifications: Set<String>
+        @Binding var selectedTags: Set<ReminderTag>
+        @Binding var voiceNoteData: Data?
+        @Binding var notes: String
+        @Binding var selectedPhotos: [UIImage]
+        @Binding var isShowingImagePicker: Bool
+        @Binding var expandedPhotoIndex: Int?
+        @Binding var url: String
+        var colorScheme: ColorScheme
+        
+        var body: some View {
+            Grid(alignment: .leading, horizontalSpacing: 32, verticalSpacing: 20) {
+                GridRow {
+                    Label("Start", systemImage: "calendar")
+                        .foregroundColor(.primary)
+                    Label("Due", systemImage: "calendar")
+                        .foregroundColor(.primary)
+                }
+                
+                GridRow {
+                    DatePicker("", selection: $startDate, displayedComponents: [.date])
+                        .labelsHidden()
+                    DatePicker("", selection: Binding(
+                        get: { endDate ?? startDate },
+                        set: { endDate = $0 }
+                    ), displayedComponents: [.date])
+                    .labelsHidden()
+                }
+                
+                GridRow {
+                    Label("Repeat", systemImage: "arrow.clockwise")
+                        .foregroundColor(.primary)
+                    Label("List", systemImage: "list.bullet")
+                        .foregroundColor(.primary)
+                }
+                
+                GridRow {
+                    RepeatFieldView(repeatOption: $repeatOption, customRepeatInterval: $customRepeatInterval, colorScheme: colorScheme)
+                    ListFieldView(selectedList: $selectedList, colorScheme: colorScheme)
+                }
+                
+                GridRow {
+                    Label("Priority", systemImage: "flag")
+                        .foregroundColor(.primary)
+                    Label("Notifications", systemImage: "app.badge.fill")
+                        .foregroundColor(.primary)
+                }
+                
+                GridRow {
+                    PriorityFieldView(priority: $priority, colorScheme: colorScheme)
+                    NotificationsFieldView(selectedNotifications: $selectedNotifications, colorScheme: colorScheme)
+                }
+                
+                GridRow {
+                    Label("Tags", systemImage: "tag")
+                        .foregroundColor(.primary)
+                    Label("Voice Note", systemImage: "mic")
+                        .foregroundColor(.primary)
+                }
+                
+                GridRow {
+                    TagsFieldView(selectedTags: $selectedTags, colorScheme: colorScheme)
+                    Button {
+                    } label: {
+                        Text(voiceNoteData == nil ? "Record" : "Re-record")
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                GridRow {
+                    Label("Notes", systemImage: "note.text")
+                        .foregroundColor(.primary)
+                    Label("Photos", systemImage: "photo")
+                        .foregroundColor(.primary)
+                }
+                
+                GridRow {
+                    NotesButton(notes: $notes, colorScheme: colorScheme)
+                    Button {
+                        isShowingImagePicker = true
+                    } label: {
+                        Text(selectedPhotos.isEmpty ? "Add Photos" : "\(selectedPhotos.count) Photos")
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                GridRow {
+                    Label("Link", systemImage: "link")
+                        .foregroundColor(.primary)
+                        .gridCellColumns(2)
+                }
+                
+                GridRow {
+                    TextField("Add URL", text: $url)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.URL)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
+                        .gridCellColumns(2)
+                }
+            }
+        }
+    }
+    
     private var mainContent: some View {
         VStack {
             List {
-                TitleFieldView(title: Binding(
-                    get: { viewModel.title },
-                    set: { viewModel.title = $0 }
-                ), taskType: preferredTaskType, colorScheme: _colorScheme)
-                .listRowSeparator(.hidden, edges: .all)
-                .padding(.top, 8)
-                
-                DateFieldsView(
-                    startDate: Binding(
-                        get: { viewModel.startDate },
-                        set: { viewModel.startDate = $0 }
-                    ),
-                    endDate: Binding(
-                        get: { viewModel.endDate },
-                        set: { viewModel.endDate = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                RepeatFieldView(
-                    repeatOption: Binding(
-                        get: { viewModel.repeatOption },
-                        set: { viewModel.repeatOption = $0 }
-                    ),
-                    customRepeatInterval: Binding(
-                        get: { viewModel.customRepeatInterval },
-                        set: { viewModel.customRepeatInterval = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                ListFieldView(
-                    selectedList: Binding(
-                        get: { viewModel.selectedList },
-                        set: { viewModel.selectedList = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                PriorityFieldView(
-                    priority: Binding(
-                        get: { viewModel.priority },
-                        set: { viewModel.priority = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                LinkFieldView(
-                    url: Binding(
-                        get: { viewModel.url },
-                        set: { viewModel.url = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                NotificationsFieldView(
-                    selectedNotifications: Binding(
-                        get: { viewModel.selectedNotifications },
-                        set: { viewModel.selectedNotifications = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .environmentObject(fetchingService)
-                .listRowSeparator(.hidden, edges: .all)
-                
-                TagsFieldView(
-                    selectedTags: Binding(
-                        get: { viewModel.selectedTags },
-                        set: { viewModel.selectedTags = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                NotesFieldView(
-                    notes: Binding(
-                        get: { viewModel.notes },
-                        set: { viewModel.notes = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                
-                VoiceNoteFieldView(
-                    voiceNoteData: Binding(
-                        get: { viewModel.voiceNoteData },
-                        set: { viewModel.voiceNoteData = $0 }
-                    ),
-                    colorScheme: colorScheme
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                .padding(.bottom, 0)
-                
-                PhotosFieldView(
-                    selectedPhotos: Binding(
-                        get: { viewModel.selectedPhotos },
-                        set: { viewModel.selectedPhotos = $0 }
-                    ),
-                    colorScheme: colorScheme,
-                    isShowingImagePicker: Binding(
-                        get: { viewModel.isShowingImagePicker },
-                        set: { viewModel.isShowingImagePicker = $0 }
-                    ),
-                    expandedPhotoIndex: Binding(
-                        get: { viewModel.expandedPhotoIndex },
-                        set: { viewModel.expandedPhotoIndex = $0 }
+                Group {
+                    TitleFieldView(title: $viewModel.title, taskType: preferredTaskType, colorScheme: _colorScheme)
+                        .listRowSeparator(.hidden)
+                        .padding(.top, 8)
+                    
+                    GridFieldsView(
+                        startDate: $viewModel.startDate,
+                        endDate: $viewModel.endDate,
+                        repeatOption: $viewModel.repeatOption,
+                        customRepeatInterval: $viewModel.customRepeatInterval,
+                        selectedList: $viewModel.selectedList,
+                        priority: $viewModel.priority,
+                        selectedNotifications: $viewModel.selectedNotifications,
+                        selectedTags: $viewModel.selectedTags,
+                        voiceNoteData: $viewModel.voiceNoteData,
+                        notes: $viewModel.notes,
+                        selectedPhotos: $viewModel.selectedPhotos,
+                        isShowingImagePicker: $viewModel.isShowingImagePicker,
+                        expandedPhotoIndex: $viewModel.expandedPhotoIndex,
+                        url: $viewModel.url,
+                        colorScheme: colorScheme
                     )
-                )
-                .listRowSeparator(.hidden, edges: .all)
-                .padding(.top, 0)
+                    .listRowSeparator(.hidden)
+                }
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
             .listRowBackground(Color.clear)
             .scrollContentBackground(.hidden)
@@ -271,3 +309,46 @@ public struct AddReminderView: View {
 extension NSNotification.Name {
     static let reminderAdded = NSNotification.Name("reminderAdded")
 }
+
+//struct AddReminderView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        let persistenceController = PersistenceController.inMemoryController()
+//        
+//        let fetchingService = ReminderFetchingServiceUI()
+//        let modificationService = ReminderModificationService(persistenceController: persistenceController)
+//        let tagService = TagService(persistenceController: persistenceController)
+//        let listService = ListService(persistenceController: persistenceController)
+//        
+//        let appSettings = AppSettings()
+//        
+//        AddReminderView(
+//            persistentContainer: persistenceController.persistentContainer,
+//            fetchingService: fetchingService,
+//            modificationService: modificationService,
+//            tagService: tagService,
+//            listService: listService
+//        )
+//        .environmentObject(fetchingService)
+//        .environmentObject(modificationService)
+//        .environmentObject(listService)
+//        .environmentObject(appSettings)
+//        .previewDisplayName("Add Reminder View")
+//    }
+//}
+//
+//extension PersistenceController {
+//    static func createPreviewContainer() -> NSPersistentContainer {
+//        let container = NSPersistentContainer(name: "HexagonModel")
+//        let description = NSPersistentStoreDescription()
+//        description.type = NSInMemoryStoreType
+//        container.persistentStoreDescriptions = [description]
+//        
+//        container.loadPersistentStores { description, error in
+//            if let error = error {
+//                fatalError("Unable to load persistent stores: \(error)")
+//            }
+//        }
+//        
+//        return container
+//    }
+//}

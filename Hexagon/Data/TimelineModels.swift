@@ -97,7 +97,6 @@ public struct TimelineTask: Identifiable, Equatable, Hashable {
         do {
             return try PersistenceController.shared.persistentContainer.viewContext.existingObject(with: listId) as? TaskList
         } catch {
-            print("Failed to fetch TaskList: \(error.localizedDescription)")
             return nil
         }
     }

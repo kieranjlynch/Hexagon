@@ -7,33 +7,46 @@
 
 import SwiftUI
 
-
 struct ListFieldView: View {
     @Binding var selectedList: TaskList?
     var colorScheme: ColorScheme
     @EnvironmentObject private var listService: ListService
+    @State private var lists: [TaskList] = []
     
     var body: some View {
-        HStack {
-            NavigationLink {
-                ListSheetView(selectedList: $selectedList)
+        Menu {
+            Button {
+                selectedList = nil
             } label: {
-                Label {
-                    Text("List")
-                } icon: {
-                    Image(systemName: "list.bullet")
+                if selectedList == nil {
+                    Label("None", systemImage: "checkmark")
+                } else {
+                    Text("None")
                 }
-                .foregroundColor(colorScheme == .dark ? .white : .black)
             }
-            .buttonStyle(PlainButtonStyle())
-            Spacer()
-            if let selectedList = selectedList {
-                Text(selectedList.name ?? "")
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(Constants.UI.cornerRadius)
+            
+            ForEach(lists, id: \.self) { list in
+                Button {
+                    selectedList = list
+                } label: {
+                    if selectedList == list {
+                        Label(list.name ?? "", systemImage: "checkmark")
+                    } else {
+                        Text(list.name ?? "")
+                    }
+                }
+            }
+        } label: {
+            Text(selectedList?.name ?? "None")
+                .foregroundColor(.blue)
+        }
+        .onAppear {
+            Task {
+                do {
+                    lists = try await listService.fetchAllLists()
+                } catch {
+                    print("Error fetching lists: \(error)")
+                }
             }
         }
     }

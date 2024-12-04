@@ -70,10 +70,3 @@ enum ViewStateError: LocalizedError {
         }
     }
 }
-
-public protocol DataLoadable {
-    associatedtype LoadedData
-    func loadContent() async throws -> LoadedData
-    func handleLoadedContent(_ content: LoadedData)
-    func handleLoadError(_ error: Error)
-}

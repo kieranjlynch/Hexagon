@@ -16,21 +16,25 @@ struct ListDetailViewState: Equatable {
 }
 
 @MainActor
-final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging, ErrorHandling, TaskManaging, LoggerProvider {
+final class ListDetailViewModel: NSObject, ViewModel, @preconcurrency ViewStateManaging, @preconcurrency ErrorHandlingViewModel, TaskManaging, LoggerProvider {
     typealias State = ListDetailViewState
     
-    @Published private(set) var viewState: ListDetailViewState
-    @Published var error: IdentifiableError?
-    @Published var state: ViewState<ListDetailViewState> = .idle
+    let errorHandler: ErrorHandling = ErrorHandlerService.shared
     
+    @Published private(set) var viewState: ListDetailViewState
+    @Published private(set) var internalState: ViewState<ListDetailViewState> = .idle
+    @Published var error: IdentifiableError?
+    var state: ViewState<ListDetailViewState> {
+        internalState
+    }
+    var reminders: [Reminder] {
+        viewState.reminders
+    }
     var activeTasks = Set<Task<Void, Never>>()
     var cancellables = Set<AnyCancellable>()
     
     let logger: Logger
-    
     let taskList: TaskList
-    var reminders: [Reminder] { viewState.reminders }
-    var listSymbol: String { viewState.listSymbol }
     
     private let reminderService: ReminderServiceFacade
     private let subHeadingService: SubHeadingServiceFacade
@@ -40,6 +44,7 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
     private var isSearchSetupComplete = false
     private var isLoadingContent = false
     private var isInitialized = false
+    private var cleanupTask: Task<Void, Never>?
     
     init(
         taskList: TaskList,
@@ -56,9 +61,9 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         self.viewState = ListDetailViewState()
         self.logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "ListDetailViewModel")
         
+        super.init()
+        
         if parentViewModel == nil {
-            print("INFO: Initializing root ListDetailViewModel for list: \(taskList.name ?? "unnamed")")
-            print("INFO: List ID: \(taskList.listID?.uuidString ?? "no ID")")
             setupObservers()
             Task {
                 await loadInitialState()
@@ -66,36 +71,11 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         }
     }
     
-    // MARK: - ViewModel Lifecycle Methods
-    
-    func viewDidLoad() {
-        // Implement any setup needed when the view loads
+    deinit {
+        activeTasks.forEach { $0.cancel() }
+        activeTasks.removeAll()
+        cancellables.removeAll()
     }
-    
-    func viewWillAppear() {
-        // Implement any actions needed when the view appears
-    }
-    
-    func viewWillDisappear() {
-        // Implement any cleanup needed when the view disappears
-    }
-    
-    // MARK: - ViewStateManaging Methods
-    
-    func updateViewState(_ newState: ViewState<ListDetailViewState>) {
-        state = newState
-        if case .error(let message) = newState {
-            error = IdentifiableError(message: message)
-        }
-    }
-    
-    // MARK: - ErrorHandling Method
-    
-    func handleError(_ error: Error) {
-        self.error = IdentifiableError(error: error)
-    }
-    
-    // MARK: - Data Loading
     
     private func setupObservers() {
         let notificationNames: [Notification.Name] = [
@@ -123,13 +103,16 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         
         do {
             async let reminders = loadContent()
-            async let subHeadings = subHeadingService.fetchSubHeadings(for: taskList)
+            async let subHeadings = subHeadingService.fetchSubHeadings(for: self.taskList)
             
             let (loadedReminders, loadedSubHeadings) = try await (reminders, subHeadings)
             viewState.reminders = loadedReminders
             viewState.subHeadings = loadedSubHeadings
-            updateViewState(.loaded(viewState))
+            await updateViewState(.loaded(viewState))
+            logger.debug("Initial state loaded with \(loadedReminders.count) reminders and \(loadedSubHeadings.count) subheadings")
         } catch {
+            logger.error("Failed to load initial state: \(error.localizedDescription)")
+            await updateViewState(.error(error.localizedDescription))
             handleError(error)
         }
     }
@@ -139,15 +122,16 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         isLoadingContent = true
         defer { isLoadingContent = false }
         
-        print("INFO: Loading content for list: \(taskList.name ?? "unknown")")
-        await performanceMonitor?.startOperation("LoadContent")
-        defer { Task { await performanceMonitor?.endOperation("LoadContent") } }
-        
-        let fetchedReminders = try await reminderService.fetchReminders(for: taskList, isCompleted: false)
-        return fetchedReminders
+        do {
+            logger.debug("Fetching reminders for task list: \(self.taskList.name ?? "unnamed")")
+            let fetchedReminders = try await reminderService.fetchReminders(for: taskList, isCompleted: false)
+            logger.debug("Fetched \(fetchedReminders.count) reminders")
+            return fetchedReminders
+        } catch {
+            logger.error("Failed to load reminders: \(error.localizedDescription)")
+            throw error
+        }
     }
-    
-    // MARK: - Data Handling
     
     var subHeadingsArray: [SubHeading] {
         if let parent = parentViewModel {
@@ -159,20 +143,18 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
     func sortReminders(by sortType: ReminderSortType) async {
         do {
             let reminders = try await reminderService.fetchSortedReminders(for: taskList, sortType: sortType)
-            await MainActor.run {
-                viewState.reminders = reminders
-                updateViewState(.loaded(viewState))
-            }
+            viewState.reminders = reminders
+            await updateViewState(.loaded(viewState))
         } catch {
             handleError(error)
-            print("ERROR: Failed to sort reminders: \(error.localizedDescription)")
+            await updateViewState(.error(error.localizedDescription))
         }
     }
     
     func toggleCompletion(_ reminder: Reminder) async {
         do {
             let updatedReminder = try await reminderService.toggleCompletion(reminder)
-            if let index = reminders.firstIndex(of: reminder) {
+            if let index = viewState.reminders.firstIndex(of: reminder) {
                 if updatedReminder.isCompleted {
                     viewState.reminders.remove(at: index)
                 } else {
@@ -190,7 +172,7 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         isSearchSetupComplete = true
         
         Task { @MainActor in
-            let predicate = NSPredicate(format: "list == %@ AND isCompleted == NO", taskList)
+            let predicate = NSPredicate(format: "list == %@ AND isCompleted == NO", self.taskList)
             await searchViewModel.updateBasePredicate(predicate)
         }
     }
@@ -227,43 +209,40 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         
         let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         
-        return reminders
+        let filtered = viewState.reminders
             .filter { reminder in compoundPredicate.evaluate(with: reminder) }
             .sorted { $0.order < $1.order }
+        
+        logger.debug("Filtered \(filtered.count) reminders from \(self.viewState.reminders.count) total")
+        return filtered
     }
     
     func fetchExistingObject<T: NSManagedObject>(with objectID: NSManagedObjectID, as type: T.Type) async -> T? {
         return await reminderService.existingObject(with: objectID, as: type)
     }
     
-    // MARK: - Move and Reorder Items
-    
     func moveItem(_ item: ListItemTransfer, toIndex targetIndex: Int, underSubHeading targetSubHeading: SubHeading?) {
-        print("DEBUG: -------- Moving Item --------")
-        print("DEBUG: Item type: \(item.type)")
-        print("DEBUG: Target index: \(targetIndex)")
-        print("DEBUG: Target subheading: \(targetSubHeading?.title ?? "none")")
-        
-        logCurrentState(operation: "State Before Move")
-        
-        let context = PersistenceController.shared.persistentContainer.viewContext
-        
-        switch item.type {
-        case .reminder:
-            moveReminder(withID: item.id, toIndex: targetIndex, underSubHeading: targetSubHeading)
-        case .subheading:
-            moveSubheading(withID: item.id, toIndex: targetIndex)
-        case .group:
-            print("DEBUG: Group moves not implemented")
-        @unknown default:
-            print("DEBUG: Unknown item type")
-            fatalError("Unknown item type encountered")
+        Task {
+            logCurrentState(operation: "State Before Move")
+            
+            let context = PersistenceController.shared.persistentContainer.viewContext
+            
+            switch item.type {
+            case .reminder:
+                moveReminder(withID: item.id, toIndex: targetIndex, underSubHeading: targetSubHeading)
+            case .subheading:
+                moveSubheading(withID: item.id, toIndex: targetIndex)
+            case .group:
+                logger.debug("Group moves not implemented")
+            @unknown default:
+                fatalError("Unknown item type encountered")
+            }
+            
+            try? context.save()
+            await updateViewState(.loaded(viewState))
+            
+            logCurrentState(operation: "State After Move")
         }
-        
-        try? context.save()
-        updateViewState()
-        
-        logCurrentState(operation: "State After Move")
     }
     
     private func moveReminder(withID id: UUID, toIndex targetIndex: Int, underSubHeading targetSubHeading: SubHeading?) {
@@ -273,7 +252,7 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         fetchRequest.fetchLimit = 1
         
         guard let reminder = try? context.fetch(fetchRequest).first else {
-            print("DEBUG: Failed to fetch reminder with ID: \(id)")
+            logger.error("Failed to fetch reminder with ID: \(id)")
             return
         }
         
@@ -320,19 +299,6 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         
         if let targetSubHeading = targetSubHeading {
             targetSubHeading.addToReminders(reminder)
-        }
-    }
-    
-    private func updateViewState() {
-        let context = PersistenceController.shared.persistentContainer.viewContext
-        let reminderFetchRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
-        reminderFetchRequest.predicate = NSPredicate(format: "list == %@ AND isCompleted == %@", taskList, NSNumber(value: false))
-        reminderFetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Reminder.order, ascending: true)]
-        
-        if let updatedReminders = try? context.fetch(reminderFetchRequest) {
-            viewState.reminders = updatedReminders
-            self.objectWillChange.send()
-            NotificationCenter.default.post(name: .reminderUpdated, object: nil)
         }
     }
     
@@ -398,7 +364,16 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
         taskList.addToSubHeadings(subHeading)
         
         try? context.save()
-        updateViewState()
+        Task { await updateViewState(.loaded(viewState)) }
+    }
+    
+    nonisolated func updateViewState(_ newState: ViewState<ListDetailViewState>) async {
+        await MainActor.run { [weak self] in
+            self?.internalState = newState
+            if case .error(let message) = newState {
+                self?.error = IdentifiableError(message: message)
+            }
+        }
     }
     
     private func fetchCurrentReminders(for subHeading: SubHeading?) -> [Reminder] {
@@ -414,32 +389,29 @@ final class ListDetailViewModel: ObservableObject, ViewModel, ViewStateManaging,
     }
     
     private func logCurrentState(operation: String) {
-        print("\nDEBUG: -------- \(operation) --------")
-        print("\nDEBUG: Subheadings:")
         let subheadings = subHeadingsArray
+        logger.debug("\(operation) - Subheadings count: \(subheadings.count)")
         for (index, subheading) in subheadings.enumerated() {
-            print("DEBUG: [\(index)] \(subheading.title ?? "untitled") (Order: \(subheading.order))")
             let subheadingReminders = fetchCurrentReminders(for: subheading)
+            logger.debug("Subheading \(index): \(subheading.title ?? "untitled") has \(subheadingReminders.count) reminders")
             subheadingReminders.forEach { reminder in
-                print("DEBUG:     - \(reminder.title ?? "untitled") (Order: \(reminder.order))")
+                logger.debug("  - Reminder: \(reminder.title ?? "untitled") Order: \(reminder.order)")
             }
         }
-        
-        print("\nDEBUG: Main section (no subheading):")
         let mainReminders = fetchCurrentReminders(for: nil)
+        logger.debug("Main section has \(mainReminders.count) reminders")
         mainReminders.forEach { reminder in
-            print("DEBUG: - \(reminder.title ?? "untitled") (Order: \(reminder.order))")
+            logger.debug("  - Reminder: \(reminder.title ?? "untitled") Order: \(reminder.order)")
         }
-        print("\nDEBUG: --------------------------------\n")
     }
-    
-    // MARK: - Reload State
     
     func reloadRemindersState() async {
         do {
             let reminders = try await loadContent()
             viewState.reminders = reminders
+            logger.debug("Reloaded \(reminders.count) reminders")
         } catch {
+            logger.error("Failed to reload reminders: \(error.localizedDescription)")
             handleError(error)
         }
     }

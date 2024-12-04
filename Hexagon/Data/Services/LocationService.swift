@@ -14,11 +14,6 @@ public protocol LocationServiceFacade: BaseProvider where T == LocationModel {
     func deleteLocation(_ model: LocationModel) async throws
 }
 
-public protocol LocationManaging {
-    func fetchLocations() async throws -> [LocationModel]
-    func saveLocation(_ name: String, coordinate: CLLocationCoordinate2D) async throws
-}
-
 @MainActor
 public class LocationService: LocationServiceFacade, LocationManaging {
     public static let shared = LocationService(persistenceController: PersistenceController.shared)

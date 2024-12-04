@@ -97,17 +97,17 @@ struct FloatingActionButton<T: Tip>: View {
     }
     
     private var menuContent: some View {
-            VStack(alignment: .trailing, spacing: 16) {
-                if isExpanded {
-                    expandedButtons
-                }
-                
-                mainHexagonButton
-                    .rotationEffect(.degrees(isExpanded ? 150 : 0))
-                    .scaleEffect(isExpanded ? expandedScale : 1)
+        VStack(alignment: .trailing, spacing: 16) {
+            if isExpanded {
+                expandedButtons
             }
-            .transition(.scale)
+            
+            mainHexagonButton
+                .rotationEffect(.degrees(isExpanded ? 150 : 0))
+                .scaleEffect(isExpanded ? expandedScale : 1)
         }
+        .transition(.scale)
+    }
     
     private var expandedButtons: some View {
         VStack(alignment: .trailing, spacing: 12) {

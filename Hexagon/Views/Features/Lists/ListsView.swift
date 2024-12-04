@@ -7,7 +7,6 @@ import SwiftUI
 import CoreData
 import TipKit
 
-
 struct ListsView: View {
     @Environment(\.managedObjectContext) var context
     @Environment(\.colorScheme) var colorScheme
@@ -17,22 +16,22 @@ struct ListsView: View {
     @EnvironmentObject var fetchingService: ReminderFetchingServiceUI
     @EnvironmentObject var modificationService: ReminderModificationService
     @EnvironmentObject var subheadingService: SubheadingService
-
+    
     @StateObject private var viewModel: ListViewModel
     @StateObject private var searchViewModel: SearchViewModel
     @StateObject private var tagService = TagService.shared
-
+    
     @Binding var showFloatingActionButtonTip: Bool
     @Binding var showInboxTip: Bool
-
+    
     let floatingActionButtonTip: FloatingActionButtonTip
     let inboxTip: InboxTip
-
+    
     @State private var showAddReminderView = false
     @State private var showAddNewListView = false
     @State private var selectedListID: NSManagedObjectID?
     @State private var searchText = ""
-
+    
     init(context: NSManagedObjectContext,
          fetchingService: ReminderFetchingServiceUI,
          modificationService: ReminderModificationService,
@@ -41,30 +40,31 @@ struct ListsView: View {
          showInboxTip: Binding<Bool> = .constant(false),
          floatingActionButtonTip: FloatingActionButtonTip = FloatingActionButtonTip(),
          inboxTip: InboxTip = InboxTip()) {
-
+        
         _viewModel = StateObject(wrappedValue: ListViewModel(
             context: context,
             dataProvider: fetchingService.service,
             subHeadingOperations: subheadingService,
             reminderOperations: modificationService
         ))
-
+        
         _searchViewModel = StateObject(wrappedValue: SearchViewModel(
             searchDataProvider: fetchingService.service
         ))
-
+        
         self._showFloatingActionButtonTip = showFloatingActionButtonTip
         self._showInboxTip = showInboxTip
         self.floatingActionButtonTip = floatingActionButtonTip
         self.inboxTip = inboxTip
     }
-
+    
     private var filteredLists: [TaskList] {
         listService.taskLists.filter { taskList in
-            searchText.isEmpty || (taskList.name?.localizedCaseInsensitiveContains(searchText) ?? false)
+            !taskList.isDeleted &&
+            (searchText.isEmpty || (taskList.name?.localizedCaseInsensitiveContains(searchText) ?? false))
         }
     }
-
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -108,7 +108,7 @@ struct ListsView: View {
             await listService.initialize()
         }
     }
-
+    
     @ViewBuilder
     private var contentLayer: some View {
         if filteredLists.isEmpty {
@@ -128,7 +128,7 @@ struct ListsView: View {
             }
         }
     }
-
+    
     private func listItemView(for taskList: TaskList) -> some View {
         ListItemView(
             taskList: taskList,
@@ -139,17 +139,17 @@ struct ListsView: View {
             subheadingService: subheadingService
         )
     }
-
+    
     private func deleteTaskList(taskList: TaskList) {
         Task {
             do {
-                try await viewModel.deleteTaskList(taskList)
+                try await listService.deleteTaskList(taskList)
             } catch {
                 print("Failed to delete task list: \(error)")
             }
         }
     }
-
+    
     private var floatingButtonLayer: some View {
         FloatingActionButton(
             appSettings: appSettings,

@@ -50,7 +50,6 @@ struct SubheadingSection: View {
                 ) { providers, location in
                     guard let item = dragStateManager.draggingListItem else { return false }
                     
-                    // When dropping on header, always insert at beginning of section
                     listViewModel.moveItem(item, toIndex: 0, underSubHeading: subHeading)
                     dragStateManager.endDragging()
                     return true

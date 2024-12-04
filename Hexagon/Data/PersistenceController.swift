@@ -39,7 +39,7 @@ public final class PersistenceController {
     @objc private func persistentStoreRemoteChange(_ notification: Notification) {
         Task {
             do {
-                try await self.processRemoteStoreChange()
+                try await processRemoteStoreChange()
             } catch {
                 logger.error("Failed to process remote store change: \(error.localizedDescription)")
             }
@@ -58,7 +58,7 @@ public final class PersistenceController {
                 for transaction in transactions {
                     context.mergeChanges(fromContextDidSave: transaction.objectIDNotification())
                     historyToken = transaction.token
-                    try? self.persistHistoryToken(transaction.token)
+                    try? persistHistoryToken(transaction.token)
                 }
             }
         }
@@ -67,24 +67,31 @@ public final class PersistenceController {
     private func setupContainer(inMemory: Bool) {
         ValueTransformer.setValueTransformer(UIColorTransformer(), forName: NSValueTransformerName("UIColorTransformer"))
         
-        var managedObjectModel: NSManagedObjectModel?
-        if let modelURL = Bundle.main.url(forResource: modelName, withExtension: "momd") {
-            managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)
-        }
-        
-        if managedObjectModel == nil {
-            let bundle = Bundle(for: PersistenceController.self)
-            managedObjectModel = NSManagedObjectModel.mergedModel(from: [bundle])
-        }
-        
-        guard let model = managedObjectModel else {
-            logger.error("Unable to locate or load Core Data model")
-            fatalError("Core Data model configuration error")
-        }
-        
+        let model = loadManagedObjectModel()
         let container = NSPersistentContainer(name: modelName, managedObjectModel: model)
+        let description = createStoreDescription(inMemory: inMemory)
         
+        container.persistentStoreDescriptions = [description]
+        self.persistentContainer = container
+    }
+    
+    private func loadManagedObjectModel() -> NSManagedObjectModel {
+        if let modelURL = Bundle.main.url(forResource: modelName, withExtension: "momd"),
+           let model = NSManagedObjectModel(contentsOf: modelURL) {
+            return model
+        }
+        
+        if let model = NSManagedObjectModel.mergedModel(from: [Bundle(for: PersistenceController.self)]) {
+            return model
+        }
+        
+        logger.error("Unable to locate or load Core Data model")
+        fatalError("Core Data model configuration error")
+    }
+    
+    private func createStoreDescription(inMemory: Bool) -> NSPersistentStoreDescription {
         let description: NSPersistentStoreDescription
+        
         if inMemory {
             description = NSPersistentStoreDescription()
             description.url = URL(fileURLWithPath: "/dev/null")
@@ -105,8 +112,7 @@ public final class PersistenceController {
         description.shouldInferMappingModelAutomatically = true
         description.shouldAddStoreAsynchronously = true
         
-        container.persistentStoreDescriptions = [description]
-        self.persistentContainer = container
+        return description
     }
     
     public static func inMemoryController() -> PersistenceController {
@@ -142,7 +148,7 @@ public final class PersistenceController {
                                     return
                                 }
                                 
-                                self.setupContexts()
+                                self.setupContextsAndHistory()
                                 self.isInitialized = true
                                 
                                 Task {
@@ -167,7 +173,7 @@ public final class PersistenceController {
         }
     }
     
-    private func setupContexts() {
+    private func setupContextsAndHistory() {
         persistentContainer.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
         
@@ -177,12 +183,21 @@ public final class PersistenceController {
             logger.error("Failed to set query generation: \(error.localizedDescription)")
         }
         
-        if let tokenData = UserDefaults.standard.data(forKey: PersistenceController.historyTrackingTokenKey) {
-            do {
-                historyToken = try NSKeyedUnarchiver.unarchivedObject(ofClass: NSPersistentHistoryToken.self, from: tokenData)
-            } catch {
-                logger.error("Failed to unarchive history token: \(error.localizedDescription)")
-            }
+        loadHistoryToken()
+    }
+    
+    private func loadHistoryToken() {
+        guard let tokenData = UserDefaults.standard.data(forKey: PersistenceController.historyTrackingTokenKey) else {
+            return
+        }
+        
+        do {
+            historyToken = try NSKeyedUnarchiver.unarchivedObject(
+                ofClass: NSPersistentHistoryToken.self,
+                from: tokenData
+            )
+        } catch {
+            logger.error("Failed to unarchive history token: \(error.localizedDescription)")
         }
     }
     
@@ -271,7 +286,7 @@ public final class PersistenceController {
             }
         }
     }
-
+    
     private func processAllHistory() async throws {
         let context = persistentContainer.newBackgroundContext()
         let request = NSPersistentHistoryChangeRequest.fetchHistory(after: Date.distantPast)
@@ -302,7 +317,7 @@ public final class PersistenceController {
             }
         }
     }
-
+    
     private func cleanupOldHistory() async throws {
         let calendar = Calendar.current
         guard let oldestDate = calendar.date(byAdding: .day, value: -7, to: Date()) else { return }
@@ -332,19 +347,6 @@ public final class PersistenceController {
         
         UserDefaults.standard.set(tokenData, forKey: PersistenceController.historyTrackingTokenKey)
     }
-    
-    private func setupPersistentHistory() {
-        if let tokenData = UserDefaults.standard.data(forKey: PersistenceController.historyTrackingTokenKey) {
-            do {
-                historyToken = try NSKeyedUnarchiver.unarchivedObject(
-                    ofClass: NSPersistentHistoryToken.self,
-                    from: tokenData
-                )
-            } catch {
-                logger.error("Failed to unarchive history token: \(error.localizedDescription)")
-            }
-        }
-    }
 }
 
 extension PersistenceController {
@@ -371,7 +373,7 @@ extension PersistenceController {
     func objectID(for uri: URL) -> NSManagedObjectID? {
         persistentContainer.persistentStoreCoordinator.managedObjectID(forURIRepresentation: uri)
     }
-
+    
     @MainActor
     func existingObject<T: NSManagedObject>(with objectID: NSManagedObjectID, as type: T.Type) -> T? {
         return try? persistentContainer.viewContext.existingObject(with: objectID) as? T

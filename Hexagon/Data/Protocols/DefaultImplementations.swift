@@ -8,7 +8,6 @@
 import Foundation
 import CoreData
 
-// MARK: - Default Implementation for PerformanceMonitoring
 public actor DefaultPerformanceMonitor: PerformanceMonitoring {
     public var operations: [String: CFTimeInterval] = [:]
     

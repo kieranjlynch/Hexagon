@@ -2,17 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.hexagon</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>hexagon</string>
-			</array>
-		</dict>
-	</array>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>hexagon</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.hexagon</string>
+        </dict>
+    </array>
 	<key>CoreSpotlightContinuation</key>
 	<true/>
 	<key>INIntentsSupported</key>
@@ -48,35 +48,39 @@
 	</array>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Hexagon needs access to your calendar so that you can schedule time for tasks</string>
-	<key>UIApplicationShortcutItems</key>
-	<array>
-		<dict>
-			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>plus.circle</string>
-			<key>UIApplicationShortcutItemSubtitle</key>
-			<string>Create a new task</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Add Task</string>
-			<key>UIApplicationShortcutItemType</key>
-			<string>AddTaskAction</string>
-		</dict>
-		<dict>
-			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>calendar</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Today</string>
-			<key>UIApplicationShortcutItemType</key>
-			<string>TodayAction</string>
-		</dict>
-		<dict>
-			<key>UIApplicationShortcutItemIconSymbolName</key>
-			<string>calendar.day.timeline.left</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Upcoming</string>
-			<key>UIApplicationShortcutItemType</key>
-			<string>UpcomingAction</string>
-		</dict>
-	</array>
+    <key>UIApplicationShortcutItems</key>
+    <array>
+        <dict>
+            <key>UIApplicationShortcutItemType</key>
+            <string>AddTaskAction</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Add Task</string>
+            <key>UIApplicationShortcutItemSubtitle</key>
+            <string>Create a new task</string>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>plus.circle</string>
+        </dict>
+        <dict>
+            <key>UIApplicationShortcutItemType</key>
+            <string>TodayAction</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Today</string>
+            <key>UIApplicationShortcutItemSubtitle</key>
+            <string>View today's tasks</string>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>calendar</string>
+        </dict>
+        <dict>
+            <key>UIApplicationShortcutItemType</key>
+            <string>UpcomingAction</string>
+            <key>UIApplicationShortcutItemTitle</key>
+            <string>Upcoming</string>
+            <key>UIApplicationShortcutItemSubtitle</key>
+            <string>View upcoming tasks</string>
+            <key>UIApplicationShortcutItemIconSymbolName</key>
+            <string>calendar.day.timeline.left</string>
+        </dict>
+    </array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

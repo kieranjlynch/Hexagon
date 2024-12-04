@@ -12,22 +12,15 @@ struct LinkFieldView: View {
     var colorScheme: ColorScheme
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                NavigationLink(destination: LinkSheetView(url: $url)) {
-                    Label {
-                        Text("Link")
-                    } icon: {
-                        Image(systemName: "link")
-                    }
-                    .foregroundColor(colorScheme == .dark ? .white : .black)
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Spacer()
-            }
-            .background(Color.clear)
-            .cornerRadius(Constants.UI.cornerRadius)
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Link", systemImage: "link")
+                .foregroundColor(.primary)
+            
+            TextField("https://", text: $url)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .keyboardType(.URL)
+                .autocapitalization(.none)
+                .autocorrectionDisabled()
             
             if !url.isEmpty {
                 if let urlLink = URL(string: url),
@@ -37,11 +30,9 @@ struct LinkFieldView: View {
                     Text(url)
                         .foregroundColor(.blue)
                         .lineLimit(1)
-                        .padding(.horizontal)
                 } else {
                     Text("Invalid URL")
                         .foregroundColor(.red)
-                        .padding(.horizontal)
                 }
             }
         }

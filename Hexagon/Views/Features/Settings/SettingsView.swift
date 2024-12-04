@@ -95,8 +95,7 @@ struct SettingsView: View {
                 contentType: .commaSeparatedText,
                 defaultFilename: "UserData"
             ) { result in
-                if case .failure(let error) = result {
-                    print("Failed to export file: \(error)")
+                if case .failure(_) = result {
                 }
             }
         }
@@ -133,7 +132,6 @@ struct SettingsView: View {
             exportURL = tempURL
             isExporting = true
         } catch {
-            print("Failed to write CSV: \(error)")
         }
     }
 }

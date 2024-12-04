@@ -10,7 +10,6 @@ import SwiftUI
 import CoreData
 import Combine
 
-
 struct SwipeableTaskDetailViewState: Equatable {
     var reminders: [Reminder]
     
@@ -20,18 +19,6 @@ struct SwipeableTaskDetailViewState: Equatable {
     
     static func == (lhs: SwipeableTaskDetailViewState, rhs: SwipeableTaskDetailViewState) -> Bool {
         return lhs.reminders.map { $0.objectID } == rhs.reminders.map { $0.objectID }
-    }
-}
-
-protocol ViewModelProtocol: AnyObject {
-    var activeTasks: Set<Task<Void, Never>> { get set }
-    var cancellables: Set<AnyCancellable> { get set }
-}
-
-extension ViewModelProtocol {
-    func cancellAllTasks() {
-        activeTasks.forEach { $0.cancel() }
-        activeTasks.removeAll()
     }
 }
 
@@ -52,21 +39,19 @@ final class CacheEntry: @unchecked Sendable {
 }
 
 @MainActor
-final class SwipeableTaskDetailViewModel: NSObject, @preconcurrency ViewModelProtocol, CacheManaging, ObservableObject {
+final class SwipeableTaskDetailViewModel: NSObject, ViewModelProtocol, CacheManaging, ObservableObject, DataLoadable {
     @Published private(set) var viewState: SwipeableTaskDetailViewState
     @Published var error: IdentifiableError?
-    @Published var state: ViewState<SwipeableTaskDetailViewState> = .idle
-    
-    var activeTasks = Set<Task<Void, Never>>()
-    var cancellables = Set<AnyCancellable>()
+    @Published private(set) var internalState: ViewState<SwipeableTaskDetailViewState> = .idle
     
     private let context: NSManagedObjectContext
     private let modificationService: ReminderModificationService
     private let fetchingService: ReminderFetchingService
     private var fetchedResultsController: NSFetchedResultsController<Reminder>?
-    private var pendingChanges: [(NSFetchedResultsChangeType, IndexPath?, IndexPath?)] = []
     private var contentCache: NSCache<NSString, CacheEntry>
     private var isObserving = false
+    private var pendingChanges: [(NSFetchedResultsChangeType, IndexPath?, IndexPath?)] = []
+    private var cleanupTask: Task<Void, Never>?
     
     init(reminders: [Reminder]) {
         self.context = PersistenceController.shared.persistentContainer.viewContext
@@ -74,26 +59,87 @@ final class SwipeableTaskDetailViewModel: NSObject, @preconcurrency ViewModelPro
         self.fetchingService = ReminderFetchingService.shared
         self.viewState = SwipeableTaskDetailViewState(reminders: reminders)
         self.contentCache = NSCache<NSString, CacheEntry>()
-        
         super.init()
-        
         configureCache()
         setupFetchedResultsController()
         startObservingMemoryWarnings()
     }
     
     deinit {
-        NotificationCenter.default.removeObserver(self)
-        cancellAllTasks()
+        cleanupTask = Task { [weak self] in
+            await self?.cleanup()
+        }
     }
     
-    func viewDidLoad() { }
+    typealias LoadedData = SwipeableTaskDetailViewState
+    typealias State = SwipeableTaskDetailViewState
     
-    func viewWillAppear() { }
+    nonisolated var state: ViewState<SwipeableTaskDetailViewState> {
+            get async {
+                await internalState
+            }
+        }
     
-    func viewWillDisappear() {
-        Task { @MainActor in
-            cleanupResources()
+    func getState() async -> ViewState<SwipeableTaskDetailViewState> {
+        return internalState
+    }
+    
+    nonisolated func handleLoadedContent(_ content: LoadedData) async {
+        await MainActor.run { [weak self] in
+            self?.viewState = content
+            self?.internalState = .loaded(content)
+        }
+    }
+    
+    func performLoad() async {
+        await updateViewState(.loading)
+        do {
+            let content = try await loadContent()
+            await handleLoadedContent(content)
+        } catch {
+            await handleLoadError(error)
+        }
+    }
+    
+    func refreshData() async {
+        await performLoad()
+    }
+    
+    nonisolated func initialize() async {
+        await performLoad()
+    }
+    
+    nonisolated func cleanup() async {
+        await MainActor.run {
+            contentCache.removeAllObjects()
+            NotificationCenter.default.removeObserver(self)
+            fetchedResultsController?.delegate = nil
+            fetchedResultsController = nil
+            isObserving = false
+        }
+    }
+    
+    func loadContent() async throws -> LoadedData {
+        return viewState
+    }
+    
+    nonisolated func handleLoadedContent(_ content: LoadedData) {
+            Task { @MainActor in
+                self.viewState = content
+                self.internalState = .loaded(content)
+            }
+        }
+    
+    func handleLoadError(_ error: Error) async {
+        await MainActor.run { [weak self] in
+            self?.error = IdentifiableError(error: error)
+            self?.internalState = .error(error.localizedDescription)
+        }
+    }
+    
+    func updateViewState(_ newState: ViewState<SwipeableTaskDetailViewState>) async {
+        await MainActor.run { [weak self] in
+            self?.internalState = newState
         }
     }
     
@@ -142,7 +188,6 @@ final class SwipeableTaskDetailViewModel: NSObject, @preconcurrency ViewModelPro
     
     func cleanupMemory() {
         contentCache.removeAllObjects()
-        cancellAllTasks()
     }
     
     func deleteReminder(at index: Int) async throws {
@@ -166,7 +211,7 @@ final class SwipeableTaskDetailViewModel: NSObject, @preconcurrency ViewModelPro
     
     private func configureCache() {
         contentCache.countLimit = 10
-        contentCache.totalCostLimit = 50 * 1024 * 1024
+        contentCache.totalCostLimit = 50 * 1024 * 1024 // 50MB
         contentCache.evictsObjectsWithDiscardedContent = true
     }
     
@@ -202,21 +247,6 @@ final class SwipeableTaskDetailViewModel: NSObject, @preconcurrency ViewModelPro
     @objc private func handleMemoryWarning() {
         cleanupMemory()
     }
-    
-    private func cleanupResources() {
-        contentCache.removeAllObjects()
-        NotificationCenter.default.removeObserver(self)
-        fetchedResultsController?.delegate = nil
-        fetchedResultsController = nil
-        isObserving = false
-        cancellAllTasks()
-    }
-    
-    private func updateReminders(_ reminders: [Reminder]) {
-        Task { @MainActor [weak self] in
-            self?.viewState.reminders = reminders
-        }
-    }
 }
 
 extension SwipeableTaskDetailViewModel: NSFetchedResultsControllerDelegate {
@@ -240,50 +270,50 @@ extension SwipeableTaskDetailViewModel: NSFetchedResultsControllerDelegate {
             switch type {
             case .insert:
                 if let newIndexPath = newIndexPath?.item,
-                   newIndexPath <= viewState.reminders.count {
-                    viewState.reminders.insert(reminder, at: newIndexPath)
-                    preloadContent(for: [newIndexPath])
+                   newIndexPath <= self.viewState.reminders.count {
+                    self.viewState.reminders.insert(reminder, at: newIndexPath)
+                    self.preloadContent(for: [newIndexPath])
                 }
                 
             case .delete:
                 if let indexPath = indexPath?.item,
-                   indexPath < viewState.reminders.count {
-                    cleanupContent(for: indexPath)
-                    viewState.reminders.remove(at: indexPath)
+                   indexPath < self.viewState.reminders.count {
+                    self.cleanupContent(for: indexPath)
+                    self.viewState.reminders.remove(at: indexPath)
                 }
                 
             case .update:
                 if let indexPath = indexPath?.item,
-                   indexPath < viewState.reminders.count {
-                    viewState.reminders[indexPath] = reminder
-                    preloadContent(for: [indexPath])
+                   indexPath < self.viewState.reminders.count {
+                    self.viewState.reminders[indexPath] = reminder
+                    self.preloadContent(for: [indexPath])
                 }
                 
             case .move:
                 if let indexPath = indexPath?.item,
                    let newIndexPath = newIndexPath?.item,
-                   indexPath < viewState.reminders.count,
-                   newIndexPath <= viewState.reminders.count {
-                    let reminder = viewState.reminders.remove(at: indexPath)
-                    viewState.reminders.insert(reminder, at: newIndexPath)
-                    cleanupContent(for: indexPath)
-                    preloadContent(for: [newIndexPath])
+                   indexPath < self.viewState.reminders.count,
+                   newIndexPath <= self.viewState.reminders.count {
+                    let reminder = self.viewState.reminders.remove(at: indexPath)
+                    self.viewState.reminders.insert(reminder, at: newIndexPath)
+                    self.cleanupContent(for: indexPath)
+                    self.preloadContent(for: [newIndexPath])
                 }
                 
             @unknown default:
                 break
             }
             
-            pendingChanges.append((type, indexPath, newIndexPath))
+            self.pendingChanges.append((type, indexPath, newIndexPath))
         }
     }
     
     nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         Task { @MainActor [weak self] in
             guard let self = self else { return }
-            pendingChanges.removeAll()
+            self.pendingChanges.removeAll()
             if let objects = controller.fetchedObjects as? [Reminder] {
-                updateReminders(objects)
+                self.viewState = SwipeableTaskDetailViewState(reminders: objects)
             }
         }
     }

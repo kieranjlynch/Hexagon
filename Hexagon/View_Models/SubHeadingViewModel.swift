@@ -11,7 +11,6 @@ import Foundation
 import Combine
 import os
 
-
 extension SubHeading {
     public static func == (lhs: SubHeading, rhs: SubHeading) -> Bool {
         return lhs.objectID == rhs.objectID
@@ -33,7 +32,6 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
     
     @Published private(set) var currentTaskList: TaskList?
     
-    // Implement the required 'viewState' property
     var viewState: [SubHeading] {
         subHeadings
     }
@@ -57,7 +55,23 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
         }
     }
     
-    // MARK: - ViewModel Lifecycle Methods
+    func updateViewState(_ newState: ViewState<[SubHeading]>) {
+        state = newState
+        if case .error(let message) = newState {
+            handleError(BaseAppError(errorCode: -1, category: .ui, description: message))
+        }
+    }
+    
+    @MainActor
+    func handle(_ error: Error) {
+        handle(error, logger: nil)
+    }
+    
+    @MainActor
+    func handle(_ error: Error, logger: Logger?) {
+        ErrorHandlerService.shared.handle(error, logger: logger ?? self.logger)
+        self.error = IdentifiableError(error: error)
+    }
     
     func viewDidLoad() {
         // Implement any setup needed when the view loads
@@ -71,22 +85,9 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
         // Implement any cleanup needed when the view disappears
     }
     
-    // MARK: - ViewStateManaging Methods
-    
-    func updateViewState(_ newState: ViewState<[SubHeading]>) {
-        state = newState
-        if case .error(let message) = newState {
-            error = IdentifiableError(error: message as! Error)
-        }
-    }
-    
-    // MARK: - ErrorHandling Method
-    
     func handleError(_ error: Error) {
         self.error = IdentifiableError(error: error)
     }
-    
-    // MARK: - Data Loading Methods
     
     func fetchSubHeadings(for taskList: TaskList) async throws {
         if let parent = parentViewModel {
@@ -146,7 +147,7 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
         
         await performanceMonitor.endOperation("addSubHeading")
     }
-
+    
     func updateSubHeading(_ subHeading: SubHeading, title: String) async throws {
         if let parent = parentViewModel {
             try await parent.updateSubHeading(subHeading, title: title)
@@ -181,7 +182,7 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
         
         await performanceMonitor.endOperation("updateSubHeading")
     }
-
+    
     func deleteSubHeading(_ subHeading: SubHeading) async throws {
         if let parent = parentViewModel {
             try await parent.deleteSubHeading(subHeading)
@@ -212,7 +213,7 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
         
         await performanceMonitor.endOperation("deleteSubHeading")
     }
-
+    
     func reorderSubHeadings(from source: IndexSet, to destination: Int) async throws {
         if let parent = parentViewModel {
             try await parent.reorderSubHeadings(from: source, to: destination)
@@ -249,7 +250,7 @@ final class SubHeadingViewModel: ObservableObject, ViewModel, ErrorHandling, Tas
         
         await performanceMonitor.endOperation("reorderSubHeadings")
     }
-
+    
     func moveSubHeading(_ subHeading: SubHeading, to index: Int) async throws {
         if let parent = parentViewModel {
             try await parent.moveSubHeading(subHeading, to: index)

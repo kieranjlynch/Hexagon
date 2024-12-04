@@ -16,4 +16,5 @@ extension Notification.Name {
     static let reminderDeleted = Notification.Name("reminderDeleted")
     static let reminderSaved = Notification.Name("reminderSaved")
     static let reminderStatusChanged = Notification.Name("reminderStatusChanged")
+    static let forceOpenList = Notification.Name("forceOpenList")
 }

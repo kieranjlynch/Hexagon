@@ -37,16 +37,13 @@ struct HistoryState: Equatable {
 
 @MainActor
 final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
-    // MARK: - Published Properties
     @Published private(set) var viewState: ViewState<HistoryState>
     @Published var error: IdentifiableError?
-    
-    // MARK: - Properties
+
     var activeTasks = Set<Task<Void, Never>>()
     var cancellables = Set<AnyCancellable>()
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "HistoryViewModel")
-    
-    // MARK: - Dependencies
+
     private let tasksFetcher: any CompletedTasksFetching
     private let taskGrouper: TaskGrouping
     private let listDetailFactory: ListDetailViewModelFactory
@@ -54,8 +51,7 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
     private var fetchedResultsController: NSFetchedResultsController<Reminder>?
     private var listDetailViewModels: [UUID: ListDetailViewModel] = [:]
     private var isInitialized = false
-    
-    // MARK: - Initialization
+
     init(
         context: NSManagedObjectContext,
         tasksFetcher: any CompletedTasksFetching,
@@ -73,8 +69,7 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
         setupFetchedResultsController()
         try? fetchedResultsController?.performFetch()
     }
-    
-    // MARK: - Lifecycle Methods
+
     func viewDidLoad() {
         guard !isInitialized else { return }
         isInitialized = true
@@ -86,8 +81,7 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
     func viewWillAppear() { }
     
     func viewWillDisappear() { }
-    
-    // MARK: - Data Loading
+
     func performLoad() async {
         viewState = .loading
         do {
@@ -118,7 +112,7 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
         )
 
         fetchedResultsController?.delegate = self
-        try? fetchedResultsController?.performFetch() // Ensure this is called
+        try? fetchedResultsController?.performFetch()
     }
     
     private func handleLoadedContent(_ reminders: [Reminder]) async {
@@ -132,8 +126,7 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
         self.error = IdentifiableError(error: error)
         viewState = .error(error.localizedDescription)
     }
-    
-    // MARK: - Public Methods
+
     func uncompleteTask(_ reminder: Reminder) async throws {
         viewState = .loading
         
@@ -160,8 +153,7 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
         listDetailViewModels[listID] = newViewModel
         return newViewModel
     }
-    
-    // MARK: - Private Methods
+
     private func precomputeListDetailViewModels(reminders: [Reminder]) async {
         let uniqueTaskLists = Set(reminders.compactMap { $0.list })
         for taskList in uniqueTaskLists {
@@ -176,7 +168,6 @@ final class HistoryViewModel: NSObject, ObservableObject, ViewModel {
     }
 }
 
-// MARK: - NSFetchedResultsControllerDelegate
 extension HistoryViewModel: NSFetchedResultsControllerDelegate {
     nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         Task { @MainActor [weak self] in

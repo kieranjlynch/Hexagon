@@ -1,17 +1,91 @@
 //
-//  Protocols.swift
+//  CoreProtocols.swift
 //  Hexagon
 //
-//  Created by Kieran Lynch on 13/11/2024.
+//  Created by Kieran Lynch on 03/12/2024.
 //
 
-import Foundation
-import CoreData
-import UIKit
-import MapKit
+import SwiftUI
+import Combine
 import EventKit
 import os
-import Combine
+import MapKit
+
+public protocol AsyncDataProvider {
+    func performLoad() async
+    func refreshData() async
+}
+
+public protocol StateManaging {
+    associatedtype State: Equatable
+    var state: ViewState<State> { get async }  
+    nonisolated func updateViewState(_ newState: ViewState<State>) async
+}
+
+public protocol DataLoadable {
+    associatedtype LoadedData
+    func loadContent() async throws -> LoadedData
+    func handleLoadedContent(_ content: LoadedData)
+}
+
+protocol ViewModelProtocol: StateManaging {
+    associatedtype LoadedData
+    
+    func initialize() async
+    func cleanup() async
+    func handleLoadedContent(_ content: LoadedData) async
+    func handleLoadError(_ error: Error) async
+}
+
+public protocol ListDataManaging {
+    func moveItem(_ item: ListItemTransfer, toIndex: Int)
+    func reorderItems(from: IndexSet, to: Int)
+    func deleteItem(_ item: ListItemTransfer) async throws
+}
+
+public protocol SearchDataManaging {
+    func performSearch(query: String) async throws
+    func clearSearch()
+}
+
+public protocol TaskListManaging {
+    func fetchTaskLists() async throws -> [TaskList]
+    func fetchRecentLists(limit: Int) async throws -> [TaskList]
+    func deleteTaskList(_ taskList: TaskList) async throws
+    func updateTaskList(_ taskList: TaskList) async throws
+    func createTaskList(name: String, color: UIColor, symbol: String) async throws -> TaskList
+}
+
+public protocol CalendarManaging {
+    func fetchEvents(from: Date, to: Date) async throws -> [EKEvent]
+    func requestAccess() async throws -> Bool
+    func saveEvent(title: String, startDate: Date, endDate: Date) async throws
+}
+
+public protocol LocationManaging {
+    func fetchLocations() async throws -> [LocationModel]
+    func saveLocation(_ name: String, coordinate: CLLocationCoordinate2D) async throws
+}
+
+public protocol ViewStateManaging {
+    associatedtype State: Equatable
+    var state: ViewState<State> { get }
+    func updateViewState(_ newState: ViewState<State>) async
+}
+
+public protocol ErrorHandlingViewModel: AnyObject {
+    var errorHandler: ErrorHandling { get }
+    var logger: Logger { get }
+}
+
+extension ErrorHandlingViewModel {
+    @MainActor
+    func handleError(_ error: Error) {
+        Task { @MainActor in
+            errorHandler.handle(error, logger: logger)
+        }
+    }
+}
 
 public protocol BaseProvider {
     associatedtype T
@@ -22,19 +96,6 @@ public protocol BaseProvider {
 }
 
 @MainActor
-public protocol StateManaging: ObservableObject {
-    associatedtype State: Equatable
-    var state: ViewState<State> { get set }
-    func updateViewState(_ newState: ViewState<State>)
-}
-
-@MainActor
-public protocol ErrorHandling: ObservableObject {
-    var error: IdentifiableError? { get set }
-    func handleError(_ error: Error)
-}
-
-@MainActor
 public protocol TaskManaging: AnyObject {
     var activeTasks: Set<Task<Void, Never>> { get set }
     var cancellables: Set<AnyCancellable> { get set }
@@ -42,13 +103,6 @@ public protocol TaskManaging: AnyObject {
 
 public protocol LoggerProvider: AnyObject {
     var logger: Logger { get }
-}
-
-@MainActor
-public protocol ViewStateManaging: StateManaging where State: Equatable {
-    var viewState: State { get }
-    var state: ViewState<State> { get set }
-    func updateViewState(_ newState: ViewState<State>)
 }
 
 public protocol TagServiceProtocol {

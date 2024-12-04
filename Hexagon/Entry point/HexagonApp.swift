@@ -10,7 +10,6 @@ import UIKit
 import MapKit
 import TipKit
 
-
 public enum QuickActionDestination: Identifiable {
     case addTask
     case openList(listObjectID: NSManagedObjectID)
@@ -103,7 +102,7 @@ struct Hexagon: App {
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .background {
-                    updateDynamicQuickActions()
+                    appDelegate.updateDynamicQuickActions()
                 }
             }
             .environmentObject(dragStateManager)
@@ -239,32 +238,6 @@ struct Hexagon: App {
         }
     }
     
-    private func updateDynamicQuickActions() {
-        Task {
-            let recentLists = try? await listService.fetchRecentLists(limit: 3)
-            let dynamicItems: [UIApplicationShortcutItem] = recentLists?.compactMap { list in
-                guard let name = list.name, !name.isEmpty else { return nil }
-                let listID = list.listID?.uuidString ?? list.objectID.uriRepresentation().absoluteString
-                return UIApplicationShortcutItem(
-                    type: "OpenListAction",
-                    localizedTitle: name,
-                    localizedSubtitle: "Open list",
-                    icon: UIApplicationShortcutIcon(systemImageName: list.symbol ?? "list.bullet"),
-                    userInfo: ["listId": listID as NSString]
-                )
-            } ?? []
-            
-            let existingItems = UIApplication.shared.shortcutItems ?? []
-            let staticItems = existingItems.filter { item in
-                ["AddTaskAction", "TodayAction", "UpcomingAction"].contains(item.type)
-            }
-            
-            await MainActor.run {
-                UIApplication.shared.shortcutItems = staticItems + dynamicItems
-            }
-        }
-    }
-    
     @MainActor
     private func handleShortcutAction(_ shortcutItem: UIApplicationShortcutItem) {
         switch shortcutItem.type {
@@ -275,20 +248,16 @@ struct Hexagon: App {
         case "UpcomingAction":
             selectedTab = "Upcoming"
         case "OpenListAction":
-            if let listId = shortcutItem.userInfo?["listId"] as? String {
+            if let listId = shortcutItem.userInfo?["listId"] as? String,
+               let uuid = UUID(uuidString: listId) {
                 let context = PersistenceController.shared.persistentContainer.viewContext
-                if let url = URL(string: listId),
-                   let objectID = PersistenceController.shared.persistentContainer.persistentStoreCoordinator.managedObjectID(forURIRepresentation: url) {
-                    
+                let request: NSFetchRequest<TaskList> = TaskList.fetchRequest()
+                request.predicate = NSPredicate(format: "listID == %@", uuid as CVarArg)
+                request.fetchLimit = 1
+                
+                if let list = try? context.fetch(request).first {
                     selectedTab = "Lists"
-                    NotificationCenter.default.post(name: .selectList, object: objectID)
-                } else if let uuid = UUID(uuidString: listId) {
-                    
-                    let request: NSFetchRequest<TaskList> = TaskList.fetchRequest()
-                    request.predicate = NSPredicate(format: "listID == %@", uuid as NSUUID)
-                    request.fetchLimit = 1
-                    if let list = try? context.fetch(request).first {
-                        selectedTab = "Lists"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         NotificationCenter.default.post(name: .selectList, object: list.objectID)
                     }
                 }

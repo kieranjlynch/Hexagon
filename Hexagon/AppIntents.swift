@@ -21,11 +21,10 @@ enum TaskError: Error {
     }
 }
 
-// MARK: - Task Management
 struct AddTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Task"
     static var description: LocalizedStringResource = "Create a new task in Hexagon"
-    
+
     @Parameter(title: "Title")
     var title: String
     
@@ -104,7 +103,6 @@ struct GetTaskIntent: AppIntent {
     }
 }
 
-// MARK: - Note Management
 struct AddNoteIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Note"
     static var description: LocalizedStringResource = "Add a note to an existing task"
@@ -198,7 +196,6 @@ struct DeleteNoteIntent: AppIntent {
     }
 }
 
-// MARK: - Tag Management
 struct AddTagIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Tag"
     static var description: LocalizedStringResource = "Add a tag to a task"
@@ -295,7 +292,6 @@ struct DeleteTagIntent: AppIntent {
     }
 }
 
-// MARK: - Location Management
 struct AddLocationIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Location"
     static var description: LocalizedStringResource = "Add a location to a task"
@@ -408,7 +404,6 @@ struct DeleteLocationIntent: AppIntent {
     }
 }
 
-// MARK: - Priority Management
 struct UpdatePriorityIntent: AppIntent {
     static var title: LocalizedStringResource = "Update Priority"
     static var description: LocalizedStringResource = "Change the priority level of a task"
@@ -474,7 +469,6 @@ struct DeletePriorityIntent: AppIntent {
     }
 }
 
-// MARK: - Date Management
 struct UpdateStartDateIntent: AppIntent {
     static var title: LocalizedStringResource = "Update Start Date"
     static var description: LocalizedStringResource = "Set or update the start date of a task"
@@ -597,7 +591,6 @@ struct DeleteEndDateIntent: AppIntent {
     }
 }
 
-// MARK: - Photo Management
 struct AddPhotoIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Photo"
     static var description: LocalizedStringResource = "Add a photo to a task"
@@ -720,8 +713,6 @@ struct DeletePhotoIntent: AppIntent {
     }
 }
 
-
-// MARK: - List Management
 struct AddListIntent: AppIntent {
     static var title: LocalizedStringResource = "Add List"
     static var description: LocalizedStringResource = "Create a new list to organize tasks"
@@ -840,7 +831,6 @@ struct DeleteListIntent: AppIntent {
     }
 }
 
-// MARK: - Link Management
 struct AddLinkIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Link"
     static var description: LocalizedStringResource = "Add a link to a task"
@@ -942,7 +932,6 @@ struct UpdateLinkIntent: AppIntent {
     }
 }
 
-// MARK: - Subheading Management
 struct AddSubheadingIntent: AppIntent {
     static var title: LocalizedStringResource = "Add Subheading"
     static var description: LocalizedStringResource = "Add a subheading to organize tasks within a list"
@@ -1040,7 +1029,6 @@ struct UpdateSubheadingIntent: AppIntent {
     }
 }
 
-// MARK: - Task Completion
 struct CompleteTaskIntent: AppIntent {
     static var title: LocalizedStringResource = "Complete Task"
     static var description: LocalizedStringResource = "Mark a task as completed"
@@ -1071,7 +1059,6 @@ struct CompleteTaskIntent: AppIntent {
     }
 }
 
-// MARK: - Shortcuts Provider
 struct TaskManagerShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         return [

@@ -10,7 +10,6 @@ import EventKit
 import os
 import Combine
 
-
 public struct TimelineConfiguration {
     public let daysToShow: Int
     public let startDate: Date
@@ -38,7 +37,7 @@ final class UpcomingViewModel: ObservableObject {
     
     var tasks: [TimelineTask] {
         if case .loaded(let viewState) = state {
-            return viewState.tasks
+            return viewState.tasks.filter { !$0.isCompleted }
         }
         return []
     }
@@ -52,6 +51,7 @@ final class UpcomingViewModel: ObservableObject {
         self.calendarService = calendarService
         self.configuration = configuration
         
+        setupObservers()
         generateDateRange()
         
         Task {
@@ -60,12 +60,22 @@ final class UpcomingViewModel: ObservableObject {
         }
     }
     
+    private func setupObservers() {
+        NotificationCenter.default.publisher(for: .reminderUpdated)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    await self?.refreshData()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
     func viewDidLoad() { }
     
     func viewWillAppear() { }
     
     func viewWillDisappear() {
-        // Cancel any ongoing tasks
         activeTasks.forEach { $0.cancel() }
         activeTasks.removeAll()
     }
@@ -78,14 +88,20 @@ final class UpcomingViewModel: ObservableObject {
         }
     }
     
-    func updateDateFilter(isStartDate: Bool) {
-        self.isStartDate = isStartDate
-        generateDateRange()
+    private func generateDateRange() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return }
         
-        if case .loaded(var viewState) = state {
-            viewState.isStartDate = isStartDate
-            state = .loaded(viewState)
+        dateRange = (0...configuration.daysToShow).compactMap { dayOffset in
+            calendar.date(byAdding: .day, value: dayOffset, to: tomorrow)
         }
+    }
+    
+    private func fetchReminders() async throws -> [Reminder] {
+        let calendar = Calendar.current
+        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date()))!
+        return try await dataProvider.fetchTasks(from: startOfTomorrow, filter: selectedFilter)
     }
     
     private func fetchCalendarEvents() async -> [EKEvent] {
@@ -104,6 +120,15 @@ final class UpcomingViewModel: ObservableObject {
         }
     }
     
+    private func loadTaskLists() async {
+        do {
+            taskLists = try await dataProvider.fetchTaskLists()
+        } catch {
+            logger.error("Error loading task lists: \(error.localizedDescription)")
+            self.error = IdentifiableError(error: error)
+        }
+    }
+    
     func loadInitialData() async {
         guard !isLoadingMore else { return }
         isLoadingMore = true
@@ -116,6 +141,9 @@ final class UpcomingViewModel: ObservableObject {
             let (reminders, events) = try await (remindersTask, eventsTask)
             
             var viewState = UpcomingViewState()
+            viewState.isStartDate = isStartDate
+            viewState.selectedFilter = selectedFilter
+            viewState.dateRange = dateRange
             updateTasks(reminders: reminders, calendarEvents: events, state: &viewState)
             state = .loaded(viewState)
         } catch {
@@ -130,31 +158,6 @@ final class UpcomingViewModel: ObservableObject {
     func refreshData() async {
         await loadTaskLists()
         await loadInitialData()
-    }
-    
-    private func generateDateRange() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return }
-        
-        dateRange = (0...configuration.daysToShow).compactMap { dayOffset in
-            calendar.date(byAdding: .day, value: dayOffset, to: tomorrow)
-        }
-    }
-    
-    private func fetchReminders() async throws -> [Reminder] {
-        let calendar = Calendar.current
-        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date()))!
-        return try await dataProvider.fetchTasks(from: startOfTomorrow, filter: .all)
-    }
-    
-    private func loadTaskLists() async {
-        do {
-            taskLists = try await dataProvider.fetchTaskLists()
-        } catch {
-            logger.error("Error loading task lists: \(error.localizedDescription)")
-            self.error = IdentifiableError(error: error)
-        }
     }
     
     private func updateTasks(reminders: [Reminder], calendarEvents: [EKEvent], state: inout UpcomingViewState) {

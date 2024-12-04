@@ -6,7 +6,6 @@
 import SwiftUI
 import CoreData
 
-
 struct SwipeableTaskDetailView: View {
     @StateObject private var viewModel: SwipeableTaskDetailViewModel
     @Binding var currentIndex: Int

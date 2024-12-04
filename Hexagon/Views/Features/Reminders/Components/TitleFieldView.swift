@@ -14,12 +14,12 @@ struct TitleFieldView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Title")
+            Text("")
                 .font(.subheadline)
                 .foregroundColor(.gray)
             TitleTextField(
                 text: $title,
-                placeholder: "Add \(taskType.dropLast())"
+                placeholder: "\(taskType.dropLast()) title"
             )
         }
     }

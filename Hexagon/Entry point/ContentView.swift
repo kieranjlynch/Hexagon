@@ -8,7 +8,6 @@
 import SwiftUI
 import CoreData
 import TipKit
-
 import UIKit
 
 struct ContentView: View {
@@ -20,6 +19,7 @@ struct ContentView: View {
     @Binding var selectedTab: String
     @State private var selectedList: TaskList?
     @State private var selectedListID: NSManagedObjectID?
+    @State private var shouldNavigateToList: Bool = false
     
     @State private var showFloatingActionButtonTip = true
     @State private var showInboxTip = false
@@ -50,13 +50,12 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .selectList)) { notification in
-            if let objectID = notification.object as? NSManagedObjectID,
-               let list = try? viewContext.existingObject(with: objectID) as? TaskList {
+            if let list = notification.object as? TaskList {
                 selectedTab = "Lists"
                 selectedList = list
-                selectedListID = objectID
-                
-                navigateToList(list)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    NotificationCenter.default.post(name: .forceOpenList, object: list)
+                }
             }
         }
         .environment(\.appTintColor, appSettings.appTintColor)
@@ -69,34 +68,48 @@ struct ContentView: View {
     }
     
     private func navigateToList(_ list: TaskList) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController,
-              let tabBarController = rootViewController as? UITabBarController else {
+        guard let keyWindow = UIApplication.shared.connectedScenes
+            .filter({ $0.activationState == .foregroundActive })
+            .compactMap({ $0 as? UIWindowScene })
+            .first?
+            .windows
+            .first(where: { $0.isKeyWindow }) else {
             return
         }
 
-        tabBarController.selectedIndex = 3
+        guard let rootController = keyWindow.rootViewController else {
+            return
+        }
 
-        if let navigationController = tabBarController.selectedViewController as? UINavigationController {
-            let viewModel = ListDetailViewModel(
-                taskList: list,
-                reminderService: fetchingService.service,
-                subHeadingService: subheadingService,
-                performanceMonitor: performanceMonitor as PerformanceMonitoring
-            )
-
-            let listDetailView = ListDetailView(
-                viewModel: viewModel,
-                showFloatingActionButtonTip: .constant(false),
-                floatingActionButtonTip: floatingActionButtonTip
-            )
-                .environment(\.managedObjectContext, viewContext)
-                .environmentObject(appSettings)
-                .environmentObject(DragStateManager.shared) 
-
-            let hostingController = UIHostingController(rootView: listDetailView)
-            navigationController.pushViewController(hostingController, animated: true)
+        DispatchQueue.main.async {
+            if let tabController = rootController.children.first as? UITabBarController {
+                tabController.selectedIndex = 3
+                if let navController = tabController.selectedViewController as? UINavigationController {
+                    let viewModel = ListDetailViewModel(
+                        taskList: list,
+                        reminderService: fetchingService.service,
+                        subHeadingService: subheadingService,
+                        performanceMonitor: performanceMonitor as PerformanceMonitoring
+                    )
+                    let listDetailView = ListDetailView(
+                        viewModel: viewModel,
+                        showFloatingActionButtonTip: .constant(false),
+                        floatingActionButtonTip: floatingActionButtonTip
+                    )
+                        .environment(\.managedObjectContext, viewContext)
+                        .environmentObject(appSettings)
+                        .environmentObject(DragStateManager.shared)
+                    
+                    let hostingController = UIHostingController(rootView: listDetailView)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        navController.pushViewController(hostingController, animated: true)
+                    }
+                } else {
+                    print("ContentView: Failed to get navigation controller")
+                }
+            } else {
+                print("ContentView: Failed to get tab controller")
+            }
         }
     }
     

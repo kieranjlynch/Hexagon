@@ -58,7 +58,6 @@ class LocationMonitoringManager: NSObject, CLLocationManagerDelegate, LocationMo
                     try await UNUserNotificationCenter.current().add(request)
                     manager.startMonitoring(for: region)
                 } catch {
-                    print("Failed to set up monitoring: \(error.localizedDescription)")
                 }
             }
         }

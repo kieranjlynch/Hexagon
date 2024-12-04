@@ -88,7 +88,6 @@ final class LocationViewModel: ObservableObject {
     }
 }
 
-// MARK: - DataLoadable
 extension LocationViewModel: DataLoadable {
     typealias LoadedData = [LocationModel]
     
@@ -112,7 +111,6 @@ extension LocationViewModel: DataLoadable {
     }
 }
 
-// MARK: - Public Methods
 extension LocationViewModel {
     func updateSearchQuery(_ query: String) {
         searchQuery = query
@@ -172,7 +170,6 @@ extension LocationViewModel {
     }
 }
 
-// MARK: - Private Methods
 private extension LocationViewModel {
     func setupSearchSubscription() {
         $searchQuery

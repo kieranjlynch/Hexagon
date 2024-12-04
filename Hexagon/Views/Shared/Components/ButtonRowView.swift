@@ -24,7 +24,7 @@ struct ButtonRowView: View {
             }, style: .primary)
             .disabled(!isFormValid)
         }
-        .padding()
+        .padding(.horizontal)
         .background(colorScheme == .dark ? Color.black : Color.white)
     }
 }

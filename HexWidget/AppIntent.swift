@@ -112,7 +112,6 @@ public struct TaskListQuery: EntityStringQuery, DynamicOptionsProvider {
             
             WidgetCenter.shared.reloadTimelines(ofKind: "HexagonWidget")
         } catch {
-            print("Error fetching task lists: \(error)")
             Self.cacheTimestamp = nil
         }
     }

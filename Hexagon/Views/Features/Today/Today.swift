@@ -1,7 +1,6 @@
 import SwiftUI
 import CoreData
 
-
 struct TodayView: View {
     @EnvironmentObject private var appSettings: AppSettings
     @EnvironmentObject private var fetchingService: ReminderFetchingServiceUI
@@ -72,9 +71,18 @@ struct TodayView: View {
         )
         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
         .listRowBackground(Color.clear)
+        .onChange(of: task.isCompleted) { _, isCompleted in
+            if isCompleted {
+                if viewModel.tasks.firstIndex(where: { $0.id == task.id }) != nil {
+                    Task {
+                        await viewModel.performLoad()
+                    }
+                }
+            }
+        }
         .overlay(alignment: .topTrailing) {
             if viewModel.taskIsOverdue(task) {
-                Text("OVERDUE")
+                Text("Overdue")
                     .font(.caption)
                     .foregroundColor(.red)
                     .padding(.horizontal, 8)

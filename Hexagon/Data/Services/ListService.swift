@@ -70,45 +70,29 @@ public class ListService: ObservableObject, TaskLimitChecking, ListServiceProtoc
     }
     
     public func canAddTaskWithStartDate(_ date: Date, excluding reminderID: UUID?) async throws -> Bool {
-        // Check if unlimited is enabled
         let isStartLimitUnlimited = userDefaults.bool(forKey: "isStartLimitUnlimited")
-        print("🔍 Start Limit Check:")
-        print("Is unlimited enabled:", isStartLimitUnlimited)
-
         if isStartLimitUnlimited {
-            print("✅ Unlimited tasks allowed")
             return true
         }
-
         let maxTasksStartedPerDay = userDefaults.integer(forKey: "maxTasksStartedPerDay")
-        print("Max tasks per day:", maxTasksStartedPerDay)
-
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-
-        print("Checking date range:", startOfDay, "to", endOfDay)
-
         let context = persistentContainer.viewContext
         let fetchRequest: NSFetchRequest<Reminder> = Reminder.fetchRequest()
         fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "startDate >= %@ AND startDate < %@", startOfDay as NSDate, endOfDay as NSDate),
             reminderID.map { NSPredicate(format: "reminderID != %@", $0 as CVarArg) } ?? NSPredicate(value: true)
         ])
-
+        
         let count = try await context.perform {
             try context.count(for: fetchRequest)
         }
-
-        print("Current task count:", count)
-        print("Can add task:", count < maxTasksStartedPerDay)
-
         return count < maxTasksStartedPerDay
     }
-
+    
     
     public func canAddTaskWithEndDate(_ date: Date, excluding reminderID: UUID?) async throws -> Bool {
-        // Check if unlimited is enabled
         let isCompletionLimitUnlimited = userDefaults.bool(forKey: "isCompletionLimitUnlimited")
         if isCompletionLimitUnlimited {
             return true
@@ -151,15 +135,17 @@ public class ListService: ObservableObject, TaskLimitChecking, ListServiceProtoc
     }
     
     public func fetchRecentLists(limit: Int) async throws -> [TaskList] {
-        let context = persistentContainer.viewContext
-        
-        return try await context.perform {
-            let request: NSFetchRequest<TaskList> = TaskList.fetchRequest()
-            request.predicate = NSPredicate(format: "name != %@", "Inbox")
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \TaskList.createdAt, ascending: false)]
-            request.fetchLimit = limit
-            return try context.fetch(request)
+        let context = PersistenceController.shared.persistentContainer.viewContext
+        let request: NSFetchRequest<TaskList> = TaskList.fetchRequest()
+        request.fetchLimit = limit
+        request.predicate = NSPredicate(format: "name != nil AND name != ''")
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \TaskList.createdAt, ascending: false)]
+        let results = try await context.perform {
+            try context.fetch(request)
         }
+        results.forEach { list in
+        }
+        return results
     }
     
     public func fetchInboxList() async throws -> TaskList {
@@ -189,26 +175,34 @@ public class ListService: ObservableObject, TaskLimitChecking, ListServiceProtoc
     }
     
     public func deleteTaskList(_ taskList: TaskList) async throws {
-        let context = persistentContainer.viewContext
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
         try await withCheckedThrowingContinuation { continuation in
             context.perform {
                 do {
-                    let reminders = taskList.reminders?.allObjects as? [Reminder] ?? []
+                    guard let taskListInContext = try context.existingObject(with: taskList.objectID) as? TaskList else {
+                        continuation.resume()
+                        return
+                    }
+
+                    let reminders = taskListInContext.reminders?.allObjects as? [Reminder] ?? []
                     for reminder in reminders {
                         context.delete(reminder)
                     }
                     
-                    let subHeadings = taskList.subHeadings?.allObjects as? [SubHeading] ?? []
+                    let subHeadings = taskListInContext.subHeadings?.allObjects as? [SubHeading] ?? []
                     for subHeading in subHeadings {
                         context.delete(subHeading)
                     }
                     
-                    context.delete(taskList)
+                    context.delete(taskListInContext)
                     try context.save()
-                    
-                    if let index = self.taskLists.firstIndex(where: { $0.objectID == taskList.objectID }) {
-                        self.taskLists.remove(at: index)
+
+                    Task { @MainActor in
+                        if let index = self.taskLists.firstIndex(where: { $0.objectID == taskList.objectID }) {
+                            self.taskLists.remove(at: index)
+                        }
                     }
                     
                     continuation.resume()

@@ -66,7 +66,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     public init(persistenceController: PersistenceController, modificationService: ReminderModificationService) {
         self.persistentContainer = persistenceController.persistentContainer
         self.modificationService = modificationService
-        print("📱 ReminderFetchingService initialized")
     }
     
     public func existingObject<T: NSManagedObject>(
@@ -94,7 +93,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     }
     
     public func fetchTodayTasks() async throws -> [Reminder] {
-        print("📅 Fetching today's tasks")
         let calendar = Calendar.current
         let startOfToday = calendar.startOfDay(for: Date())
         let endOfToday = calendar.date(byAdding: .day, value: 1, to: startOfToday)!
@@ -114,12 +112,10 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
             predicateRepresentation: predicateRep,
             sortDescriptorRepresentations: sortDescriptors
         )
-        print("📅 Found \(tasks.count) tasks for today")
         return tasks
     }
     
     public func fetchTasks() async throws -> [Reminder] {
-        print("📋 Fetching all incomplete tasks")
         let predicateRep = PredicateRepresentation(format: "isCompleted == NO", arguments: [])
         let sortDescriptors = [
             SortDescriptorRepresentation(key: "startDate", ascending: true),
@@ -130,15 +126,11 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
             predicateRepresentation: predicateRep,
             sortDescriptorRepresentations: sortDescriptors
         )
-        print("📋 Found \(tasks.count) incomplete tasks")
         return tasks
     }
     
     
     public func fetchReminders(for list: TaskList, isCompleted: Bool) async throws -> [Reminder] {
-        print("📋 Fetching reminders for list: \(list.name ?? "Unknown"), isCompleted: \(isCompleted)")
-        
-        // Ensure we have a permanent ID
         if list.objectID.isTemporaryID {
             try await list.managedObjectContext?.perform {
                 try list.managedObjectContext?.obtainPermanentIDs(for: [list])
@@ -162,9 +154,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     }
     
     public func fetchSortedReminders(for list: TaskList, sortType: ReminderSortType) async throws -> [Reminder] {
-        print("📋 Fetching sorted reminders for list: \(list.name ?? "Unknown")")
-        
-        // Ensure we have a permanent ID
         if list.objectID.isTemporaryID {
             try await list.managedObjectContext?.perform {
                 try list.managedObjectContext?.obtainPermanentIDs(for: [list])
@@ -186,8 +175,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     }
     
     public func toggleCompletion(_ reminder: Reminder) async throws -> Reminder {
-        print("🔄 Toggling completion for reminder: \(reminder.title ?? "Unknown")")
-        
         guard let context = reminder.managedObjectContext else {
             throw NSError(
                 domain: "ReminderFetchingService",
@@ -206,13 +193,11 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     }
     
     public func fetchTaskLists() async throws -> [TaskList] {
-        print("📚 Fetching all task lists")
         let context = persistentContainer.viewContext
         return try await context.perform {
             let request = NSFetchRequest<TaskList>(entityName: "TaskList")
             request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
             let lists = try context.fetch(request)
-            print("📚 Found \(lists.count) task lists")
             return lists
         }
     }
@@ -226,7 +211,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     }
     
     public func fetchInitialResults() async throws -> [Reminder] {
-        print("🔍 Fetching initial search results")
         let predicateRep = PredicateRepresentation(format: "isCompleted == NO", arguments: [])
         let sortDescriptors = [SortDescriptorRepresentation(key: "startDate", ascending: true)]
         
@@ -235,7 +219,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
             predicateRepresentation: predicateRep,
             sortDescriptorRepresentations: sortDescriptors
         )
-        print("🔍 Found \(results.count) initial results")
         return results
     }
     
@@ -326,7 +309,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
     }
     
     public func fetchCompletedTasks() async throws -> [Reminder] {
-        print("📋 Fetching completed tasks")
         let predicateRep = PredicateRepresentation(
             format: "isCompleted == %@ AND completedAt != nil",
             arguments: [NSNumber(value: true)]
@@ -337,18 +319,15 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
             predicateRepresentation: predicateRep,
             sortDescriptorRepresentations: sortDescriptors
         )
-        print("📋 Found \(tasks.count) completed tasks")
         return tasks
     }
     
     public func uncompleteTask(_ reminder: Reminder) async throws {
-        print("🔄 Uncompleting task: \(reminder.title ?? "Unknown")")
         let context = persistentContainer.newBackgroundContext()
         let objectID = reminder.objectID
         
         try await context.perform {
             guard let reminderInContext = try? context.existingObject(with: objectID) as? Reminder else {
-                print("❌ Error: Reminder not found in context")
                 throw NSError(
                     domain: "com.hexagon",
                     code: 404,
@@ -360,31 +339,26 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
             reminderInContext.completedAt = nil
             
             try context.save()
-            print("✅ Successfully uncompleted task")
         }
     }
     
     public func getIncompleteRemindersCount(for taskList: TaskList) async -> Int {
-        print("🔢 Getting incomplete reminder count for list: \(taskList.name ?? "Unknown")")
         let context = persistentContainer.viewContext
         return await context.perform {
             let request: NSFetchRequest<Reminder> = Reminder.fetchRequest()
             request.predicate = NSPredicate(format: "list == %@ AND isCompleted == NO", taskList)
             let count = (try? context.count(for: request)) ?? 0
-            print("📊 Found \(count) incomplete reminders")
             return count
         }
     }
     
     public func fetchSubHeadings(for taskList: TaskList) async throws -> [SubHeading] {
-        print("📑 Fetching subheadings for list: \(taskList.name ?? "Unknown")")
         let context = persistentContainer.viewContext
         return try await context.perform {
             let request: NSFetchRequest<SubHeading> = SubHeading.fetchRequest()
             request.predicate = NSPredicate(format: "taskList == %@", taskList)
             request.sortDescriptors = [NSSortDescriptor(keyPath: \SubHeading.order, ascending: true)]
             let subheadings = try context.fetch(request)
-            print("📑 Found \(subheadings.count) subheadings")
             return subheadings
         }
     }
@@ -395,9 +369,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
         sortDescriptorRepresentations: [SortDescriptorRepresentation] = [],
         fetchLimit: Int? = nil
     ) async throws -> [T] {
-        print("🔍 Executing fetch request for \(String(describing: T.self))")
-        print("Predicate: \(String(describing: predicateRepresentation?.format))")
-        
         let context = persistentContainer.viewContext
         return try await context.perform {
             let request = NSFetchRequest<T>(entityName: String(describing: T.self))
@@ -408,7 +379,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
                     format: predicateRep.format,
                     argumentArray: predicateRep.arguments
                 )
-                print("📝 Using predicate: \(predicateRep.format)")
             }
             
             request.sortDescriptors = sortDescriptorRepresentations.map { $0.toNSSortDescriptor() }
@@ -418,7 +388,6 @@ public actor ReminderFetchingService: ListDataProvider, TimelineDataProvider, To
             }
             
             let results = try context.fetch(request)
-            print("📊 Found \(results.count) results")
             return results
         }
     }

@@ -9,25 +9,6 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 
-//@available(iOS 18.0, *)
-//struct AddTaskIntent: AppIntent {
-//    static var title: LocalizedStringResource = "Add New Task"
-//    static var description = IntentDescription("Add a new task to your list")
-//    
-//    init() {}
-//    
-//    func perform() async throws -> some IntentResult {
-//        guard let url = URL(string: "hexagon://addTask") else {
-//            throw Error.invalidURL
-//        }
-//        return .result(value: url)
-//    }
-//    
-//    enum Error: Swift.Error {
-//        case invalidURL
-//    }
-//}
-
 @available(iOS 18.0, *)
 struct HexagonControlWidget: ControlWidget {
     var body: some ControlWidgetConfiguration {

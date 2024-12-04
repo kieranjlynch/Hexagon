@@ -24,25 +24,25 @@ public final class ReminderFetchingServiceUI: NSObject, ObservableObject, Remind
     public let context: NSManagedObjectContext
     
     @Published public private(set) var reminders: [Reminder] = []
-
+    
     public static let shared = ReminderFetchingServiceUI()
-
+    
     public override init() {
         self.service = ReminderFetchingService.shared
         self.context = service.persistentContainer.viewContext
         super.init()
     }
-
+    
     public init(service: ReminderFetchingService) {
         self.service = service
         self.context = service.persistentContainer.viewContext
         super.init()
     }
-
+    
     public func getReminder(withID objectID: NSManagedObjectID) throws -> Reminder {
         try context.existingObject(with: objectID) as! Reminder
     }
-
+    
     public func fetchReminders(
         predicate: NSPredicate?,
         sortDescriptors: [NSSortDescriptor]?
@@ -57,7 +57,7 @@ public final class ReminderFetchingServiceUI: NSObject, ObservableObject, Remind
             return .failure(error)
         }
     }
-
+    
     public func fetchTimelineTasks(
         with filter: ListFilter,
         fromDate: Date,
@@ -89,54 +89,54 @@ public final class ReminderFetchingServiceUI: NSObject, ObservableObject, Remind
             return .failure(error)
         }
     }
-
+    
     public func existingObject<T: NSManagedObject>(
         with objectID: NSManagedObjectID,
         as type: T.Type
     ) async -> T? {
         try? context.existingObject(with: objectID) as? T
     }
-
+    
     public func fetchTasks() async throws -> [Reminder] {
         try await service.fetchTasks()
     }
-
+    
     public func uncompleteTask(_ reminder: Reminder) async throws {
         try await service.uncompleteTask(reminder)
     }
-
+    
     public func deleteTaskList(_ taskList: TaskList) async throws {
         try await service.deleteTaskList(taskList)
     }
-
+    
     public func getIncompleteRemindersCount(for taskList: TaskList) async -> Int {
         await service.getIncompleteRemindersCount(for: taskList)
     }
-
+    
     public func fetchSubHeadings(for taskList: TaskList) async throws -> [SubHeading] {
         try await service.fetchSubHeadings(for: taskList)
     }
-
+    
     public func fetchTasks(from date: Date, filter: TimelineFilter) async throws -> [Reminder] {
         try await service.fetchTasks(from: date, filter: filter)
     }
-
+    
     public func fetchTaskLists() async throws -> [TaskList] {
         try await service.fetchTaskLists()
     }
-
+    
     public func isTaskOverdue(_ task: Reminder) async -> Bool {
         service.isTaskOverdue(task)
     }
-
+    
     public func fetchCompletedTasks() async throws -> [Reminder] {
         try await service.fetchCompletedTasks()
     }
-
+    
     public func fetchInitialResults() async throws -> [Reminder] {
         try await service.fetchInitialResults()
     }
-
+    
     public func performSearch(
         text: String,
         tokens: [ReminderToken],

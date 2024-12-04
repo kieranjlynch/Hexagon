@@ -9,7 +9,6 @@ import Foundation
 import CoreData
 import SwiftUI
 
-
 @MainActor
 class TaskLimitManager {
     static let shared = TaskLimitManager()
@@ -23,6 +22,13 @@ class TaskLimitManager {
     
     init(persistenceController: PersistenceController = .shared) {
         self.persistentContainer = persistenceController.persistentContainer
+        
+        UserDefaults.standard.register(defaults: [
+            "maxTasksStartedPerDay": 3,
+            "maxTasksCompletedPerDay": 5,
+            "isStartLimitUnlimited": true,
+            "isCompletionLimitUnlimited": true
+        ])
     }
     
     func canAddTaskWithStartDate(_ date: Date, excluding reminderID: UUID? = nil) async throws -> Bool {
@@ -46,10 +52,7 @@ class TaskLimitManager {
             try context.count(for: fetchRequest)
         }
         
-        if count >= maxTasksStartedPerDay {
-            return false
-        }
-        return true
+        return count < maxTasksStartedPerDay
     }
     
     func canAddTaskWithEndDate(_ date: Date, excluding reminderID: UUID? = nil) async throws -> Bool {
@@ -73,9 +76,6 @@ class TaskLimitManager {
             try context.count(for: fetchRequest)
         }
         
-        if count >= maxTasksCompletedPerDay {
-            return false
-        }
-        return true
+        return count < maxTasksCompletedPerDay
     }
 }

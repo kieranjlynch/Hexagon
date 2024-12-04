@@ -31,11 +31,9 @@ struct SearchState: Equatable {
 
 @MainActor
 final class SearchViewModel: ObservableObject, ViewModel {
-    // MARK: - Published Properties
     @Published private(set) var viewState: ViewState<SearchState>
     @Published var error: IdentifiableError?
-    
-    // MARK: - ViewModel Protocol Properties
+
     var activeTasks = Set<Task<Void, Never>>()
     var cancellables = Set<AnyCancellable>()
     
@@ -66,8 +64,7 @@ final class SearchViewModel: ObservableObject, ViewModel {
     func viewWillAppear() { }
     
     func viewWillDisappear() { }
-    
-    // MARK: - Data Loading
+
     func loadContent() async throws -> [Reminder] {
         guard case .loaded(let state) = viewState else { return [] }
         return try await searchDataProvider.performSearch(
@@ -89,8 +86,7 @@ final class SearchViewModel: ObservableObject, ViewModel {
         viewState = .error(error.localizedDescription)
         logger.error("Search failed: \(error.localizedDescription)")
     }
-    
-    // MARK: - State Management
+
     private func updateState(_ update: (inout SearchState) -> Void) {
         var newState = getState()
         update(&newState)
@@ -103,8 +99,7 @@ final class SearchViewModel: ObservableObject, ViewModel {
         }
         return state
     }
-    
-    // MARK: - Search Operations
+
     func updateSearchText(_ text: String) {
         updateState { state in
             state.searchText = text
@@ -137,8 +132,7 @@ final class SearchViewModel: ObservableObject, ViewModel {
             state.tokens = tokens
         }
     }
-    
-    // MARK: - Private Methods
+
     private func setupSearchSubscription() {
         $viewState
             .compactMap { viewState -> (String, [ReminderToken])? in
@@ -193,7 +187,6 @@ final class SearchViewModel: ObservableObject, ViewModel {
     }
 }
 
-// MARK: - Search Protocols
 @MainActor
 public protocol SearchResultsPresenting {
     var searchResults: [Reminder] { get }
@@ -202,7 +195,6 @@ public protocol SearchResultsPresenting {
     func updateResults(_ results: [Reminder])
 }
 
-// MARK: - SearchResultsPresenting
 extension SearchViewModel: SearchResultsPresenting {
     var searchResults: [Reminder] {
         guard case .loaded(let state) = viewState else { return [] }
@@ -226,7 +218,6 @@ extension SearchViewModel: SearchResultsPresenting {
     }
 }
 
-// MARK: - Error Types
 extension SearchViewModel {
     enum SearchError: LocalizedError {
         case invalidFilterName

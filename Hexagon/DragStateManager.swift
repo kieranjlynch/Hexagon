@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-
 import Combine
 import os
 
@@ -47,13 +46,9 @@ class DragStateManager: ObservableObject {
         if let startTime = dragStartTime {
             let elapsed = now.timeIntervalSince(startTime)
             if elapsed < dragTimeout {
-                print("DEBUG: Ignoring duplicate drag start - too soon")
                 return
             }
         }
-
-        print("DEBUG: -------- Starting New Drag Operation --------")
-        print("DEBUG: Item: \(item.title ?? "untitled") Type: \(item.type)")
 
         dragStartTime = now
         draggingListItem = item
@@ -68,9 +63,6 @@ class DragStateManager: ObservableObject {
 
     @MainActor
     func endDragging() {
-        print("DEBUG: -------- Ending Drag Operation --------")
-        print("DEBUG: Was dragging: \(draggingListItem?.title ?? "none")")
-
         dragStartTime = nil
         draggingListItem = nil
         targetIndex = nil

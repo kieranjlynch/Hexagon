@@ -5,20 +5,18 @@
 //  Created by Kieran Lynch on 30/10/2024.
 //
 
+//
+//  LimitTasksInProgressView.swift
+//  Hexagon
+//
+
 import SwiftUI
 
 struct LimitTasksInProgressView: View {
     @AppStorage("maxTasksStartedPerDay") private var maxTasksStartedPerDay: Int = 3
     @AppStorage("maxTasksCompletedPerDay") private var maxTasksCompletedPerDay: Int = 5
-    @AppStorage("isStartLimitUnlimited") private var isStartLimitUnlimited: Bool = false
-    @AppStorage("isCompletionLimitUnlimited") private var isCompletionLimitUnlimited: Bool = false
-    
-    init() {
-        UserDefaults.standard.register(defaults: [
-            "isStartLimitUnlimited": true,
-            "isCompletionLimitUnlimited": true
-        ])
-    }
+    @AppStorage("isStartLimitUnlimited") private var isStartLimitUnlimited: Bool = true
+    @AppStorage("isCompletionLimitUnlimited") private var isCompletionLimitUnlimited: Bool = true
     
     var body: some View {
         NavigationView {

@@ -8,7 +8,6 @@
 import WidgetKit
 import SwiftUI
 
-
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let taskList: TaskListEntity?
@@ -243,19 +242,18 @@ struct HexagonWidgetEntryView: View {
     var largeWidget: some View {
         ZStack {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    if let taskList = entry.taskList {
-                        Text(taskList.name)
-                            .font(.headline)
-                        Spacer()
-                        Text("\(entry.reminderCount) tasks")
-                            .font(.subheadline)
-                    } else {
-                        Text("No list selected")
-                            .font(.headline)
-                    }
+                // Title section
+                if let taskList = entry.taskList {
+                    Text(taskList.name)
+                        .font(.headline)
+                        .padding(.top) // Add spacing from the top of the widget
+                } else {
+                    Text("No list selected")
+                        .font(.headline)
+                        .padding(.top)
                 }
                 
+                // Divider and Task items right after the title
                 Divider()
                 
                 if !entry.reminders.isEmpty {
@@ -279,9 +277,12 @@ struct HexagonWidgetEntryView: View {
                     Text("No tasks available")
                         .font(.body)
                 }
+                
+                Spacer() // Pushes the Add button to the bottom
             }
             .padding()
             
+            // Add button section remains at the bottom-right
             VStack {
                 Spacer()
                 HStack {
@@ -292,6 +293,8 @@ struct HexagonWidgetEntryView: View {
             }
         }
     }
+
+
     
     var extraLargeWidget: some View {
         ZStack {

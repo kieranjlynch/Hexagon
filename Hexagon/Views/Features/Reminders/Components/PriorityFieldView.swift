@@ -11,41 +11,40 @@ struct PriorityFieldView: View {
     @Binding var priority: Int
     var colorScheme: ColorScheme
     
+    private let priorities = [
+        (0, "None"),
+        (1, "Low"),
+        (2, "Medium"),
+        (3, "High")
+    ]
+    
     var body: some View {
-        HStack {
-            NavigationLink {
-                PrioritySheetView(priority: $priority)
-            } label: {
-                Label {
-                    Text("Priority")
-                } icon: {
-                    Image(systemName: "flag")
+        Menu {
+            ForEach(priorities, id: \.0) { value, label in
+                Button {
+                    priority = value
+                } label: {
+                    if priority == value {
+                        Label(label, systemImage: "checkmark")
+                    } else {
+                        Text(label)
+                    }
                 }
-                .foregroundColor(colorScheme == .dark ? .white : .black)
             }
-            .buttonStyle(PlainButtonStyle())
-            Spacer()
-            if priority != 0 {
-                Text(priorityText(priority: priority))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor)
-                    .foregroundColor(.white)
-                    .cornerRadius(Constants.UI.cornerRadius)
-            }
+        } label: {
+            Text(priorities.first { $0.0 == priority }?.1 ?? "None")
+                .foregroundColor(.blue)
         }
     }
-    
-    private func priorityText(priority: Int) -> String {
+}
+
+extension Color {
+    static func priorityColor(for priority: Int) -> Color {
         switch priority {
-        case 1:
-            return "Low"
-        case 2:
-            return "Medium"
-        case 3:
-            return "High"
-        default:
-            return "None"
+        case 1: return .blue
+        case 2: return .orange
+        case 3: return .red
+        default: return .gray
         }
     }
 }

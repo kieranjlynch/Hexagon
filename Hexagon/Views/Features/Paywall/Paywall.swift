@@ -145,10 +145,3 @@ struct Paywall: View {
         }
     }
 }
-
-
-struct Paywall_Previews: PreviewProvider {
-    static var previews: some View {
-        Paywall()
-    }
-}

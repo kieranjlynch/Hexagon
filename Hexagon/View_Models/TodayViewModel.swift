@@ -10,35 +10,35 @@ import CoreData
 import os
 import Combine
 
-
 struct TodayViewState: Equatable {
     var tasks: [Reminder] = []
     var lastRefreshDate: Date?
 }
 
 @MainActor
-final class TodayViewModel: ObservableObject {
-    @Published private(set) var viewState = ViewState<TodayViewState>.idle
-    @Published var error: IdentifiableError?
-
+final class TodayViewModel: NSObject, ObservableObject, @preconcurrency ErrorHandlingViewModel, @preconcurrency DataLoadable {
+    @Published private(set) var state: ViewState<TodayViewState> = .idle
+    let errorHandler: ErrorHandling = ErrorHandlerService.shared
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "TodayViewModel")
+    
     var activeTasks: Set<Task<Void, Never>> = []
     var cancellables: Set<AnyCancellable> = []
-
+    
     private let taskService: TodayTaskServiceFacade
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "TodayViewModel")
     private var isLoading = false
     private var isInitialized = false
     private var loadTask: Task<Void, Never>?
-
+    
     var tasks: [Reminder] {
-        if case .loaded(let state) = viewState {
-            return state.tasks
+        if case .loaded(let viewState) = state {
+            return viewState.tasks
         }
         return []
     }
-
+    
     init(taskService: TodayTaskServiceFacade) {
         self.taskService = taskService
+        super.init()
         setupObservers()
     }
     
@@ -54,23 +54,24 @@ final class TodayViewModel: ObservableObject {
             await self?.performLoad()
         }
     }
-
+    
     func viewWillAppear() { }
-
+    
     func viewWillDisappear() {
         loadTask?.cancel()
     }
-
+    
     func performLoad() async {
         guard !isLoading else { return }
         isLoading = true
+        state = .loading
         
-        viewState = .loading
         do {
             let reminders = try await loadContent()
             handleLoadedContent(reminders)
         } catch {
-            handleLoadError(error)
+            handleError(error)
+            state = .error(error.localizedDescription)
         }
         
         isLoading = false
@@ -80,55 +81,52 @@ final class TodayViewModel: ObservableObject {
         guard !isLoading else { return }
         await performLoad()
     }
-
-    func taskIsOverdue(_ task: Reminder) -> Bool {
-        taskService.isTaskOverdue(task)
-    }
-
-    private func setupObservers() {
-        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
-            .receive(on: DispatchQueue.main)
-            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    await self?.performLoad()
-                }
-            }
-            .store(in: &cancellables)
-        
-        NotificationCenter.default.publisher(for: .reminderUpdated)
-            .receive(on: DispatchQueue.main)
-            .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    await self?.performLoad()
-                }
-            }
-            .store(in: &cancellables)
-    }
-}
-
-extension TodayViewModel: DataLoadable {
-    typealias LoadedData = [Reminder]
     
     func loadContent() async throws -> [Reminder] {
-        try await taskService.fetchTasks()
-    }
-    
-    nonisolated func handleLoadedContent(_ tasks: [Reminder]) {
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            let state = TodayViewState(tasks: tasks)
-            self.viewState = .loaded(state)
+        do {
+            return try await taskService.fetchTasks()
+        } catch {
+            throw DatabaseError.fetchFailed("Today's tasks")
         }
     }
     
-    nonisolated func handleLoadError(_ error: Error) {
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            self.logger.error("Failed to load tasks: \(error.localizedDescription)")
-            self.error = IdentifiableError(error: error)
-            self.viewState = .error(error.localizedDescription)
+    func handleLoadedContent(_ content: [Reminder]) {
+        let activeTasks = content.filter { !$0.isCompleted }
+        let viewState = TodayViewState(
+            tasks: activeTasks,
+            lastRefreshDate: Date()
+        )
+        self.state = .loaded(viewState)
+    }
+    
+    func removeTask(_ task: Reminder) {
+        if case .loaded(var viewState) = state {
+            viewState.tasks.removeAll { $0.id == task.id }
+            self.state = .loaded(viewState)
+        }
+    }
+    
+    func taskIsOverdue(_ task: Reminder) -> Bool {
+        taskService.isTaskOverdue(task)
+    }
+    
+    private func setupObservers() {
+        let notificationNames: [Notification.Name] = [
+            .NSManagedObjectContextDidSave,
+            .reminderUpdated,
+            .reminderCreated
+        ]
+        
+        for name in notificationNames {
+            NotificationCenter.default.publisher(for: name)
+                .receive(on: DispatchQueue.main)
+                .debounce(for: .milliseconds(100), scheduler: DispatchQueue.main) // Reduced debounce time
+                .sink { [weak self] _ in
+                    Task { @MainActor [weak self] in
+                        await self?.performLoad()
+                    }
+                }
+                .store(in: &cancellables)
         }
     }
 }
@@ -185,7 +183,6 @@ final class DefaultTodayTaskService: TodayTaskServiceFacade {
     }
 }
 
-// MARK: - Error Types
 enum TodayError: LocalizedError {
     case fetchFailed
     case invalidDate

@@ -28,10 +28,6 @@ class ReminderDropDelegate: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         guard let item = dragStateManager.draggingListItem else { return false }
-
-        print("DEBUG: -------- Performing Drop --------")
-        print("DEBUG: Drop location relative to section: \(info.location)")
-
         let targetIndex = calculateDropIndex(at: info.location)
         viewModel.moveItem(
             item,
@@ -59,23 +55,12 @@ class ReminderDropDelegate: DropDelegate {
     func dropExited(info: DropInfo) {}
 
     func calculateDropIndex(at location: CGPoint) -> Int {
-        print("DEBUG: -------- Calculating Drop Index --------")
-        print("DEBUG: Drop location Y: \(location.y)")
-        print("DEBUG: Section height: \(scrollViewHeight)")
-        print("DEBUG: Number of reminders: \(filteredReminders.count)")
-
         guard !filteredReminders.isEmpty else { return 0 }
-
         let sectionHeight = CGFloat(filteredReminders.count) * reminderHeight
         let percentage = max(0, min(location.y, sectionHeight)) / sectionHeight
         let rawIndex = Double(filteredReminders.count) * percentage
         let targetIndex = Int(round(rawIndex))
         let finalIndex = max(0, min(targetIndex, filteredReminders.count))
-
-        print("DEBUG: Percentage through section: \(percentage)")
-        print("DEBUG: Raw index: \(rawIndex)")
-        print("DEBUG: Final index: \(finalIndex)")
-
         return finalIndex
     }
 }

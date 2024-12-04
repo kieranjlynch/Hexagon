@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-
 struct UpcomingView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appSettings: AppSettings
@@ -84,10 +83,7 @@ struct UpcomingView: View {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(viewModel.dateRange, id: \.self) { date in
-                        let tasksForDate = viewModel.tasksForDate(date)
-                        if !tasksForDate.isEmpty {
-                            dateSection(date: date, tasks: tasksForDate)
-                        }
+                        dateSection(date: date, tasks: viewModel.tasksForDate(date))
                     }
                 }
                 .padding()

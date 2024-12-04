@@ -31,8 +31,7 @@ struct ColorPickerView: View {
         .padding(.vertical, 5)
         .clipShape(RoundedRectangle(cornerRadius: 10.0, style: .continuous))
     }
-    
-    // MARK: - Color Circle
+
     private func colorCircle(isSelected: Bool, color: Color) -> some View {
         ZStack {
             Circle()
